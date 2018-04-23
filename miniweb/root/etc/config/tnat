@@ -1,0 +1,11 @@
+
+config appmgt 'appmgt'
+    option enable      '1'
+    option log         '0'
+
+config upnp 'upnp'
+    option ipaddr         '0.0.0.0'
+    option port           '0'
+    option saveIp         '0.0.0.0'
+    option savePort       '0'
+    option last_state     '0'

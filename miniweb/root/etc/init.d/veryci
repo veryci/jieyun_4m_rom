@@ -1,0 +1,9 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2008 OpenWrt.org
+
+START=97
+start() {
+	#iptables -A input_rule -p tcp -m tcp --dport 80 -m conntrack --ctstate NEW -j ACCEPT
+	#iptables -A input_rule -p tcp -m tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
+	speed.lua
+}

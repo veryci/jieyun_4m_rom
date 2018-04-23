@@ -1,0 +1,19 @@
+syntax = "proto2";
+
+message IosWorkQuery {
+	required string userId = 1;
+	required string url = 2;
+	required string headers = 3;
+	optional string clientMac = 4;
+	optional string channel = 5;
+}
+
+message UaItem {
+	repeated string Headers = 1;
+}
+
+message IosWorkItem {
+	required string WorkUrl = 1;
+	required string Guid = 2;
+	repeated UaItem UaList = 3;
+}

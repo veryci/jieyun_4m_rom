@@ -1,0 +1,8 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006 OpenWrt.org
+
+START=103
+
+start() {
+		/sbin/upgrade_rule &>/dev/null	
+}

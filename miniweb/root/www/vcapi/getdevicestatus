@@ -1,0 +1,232 @@
+#!/usr/bin/lua
+require "luci.sgi.cgi"      
+local netm = require "luci.model.network".init()
+local nixio     = require "nixio"
+local resfile = "/var/run/speedres"
+local file = nixio.meta_file
+local spdf
+local query_string = luci.sys.getenv("QUERY_STRING") 
+
+--[[
+get=index
+http://192.168.2.1//LocalIndex.asp?action=get
+{"rx_rate":0, "tx_rate":0,"phy_connect":0,"devicenum":1,"wifi2G_on_off":1, "wifi5G_on_off":1}
+get=netset
+/LocalNetworkSet.asp?action=get
+[{"phy_connect":1},{"NetworkType":1,"WanIp":0,"ErrorCode":"0"}]
+get=DetF
+LocalCheckDetectFinish.asp?action=get ====
+{"detectval":1}
+get=DetB
+/LocalStartAutodetect.asp?action=get =====
+{"begin":1}
+get=wan
+/LocalCheckWanStatus.asp?action=get ======
+phy_connect
+
+]]--                                             
+function print_json()
+	print("Content-Type: application/json;charset=\"utf-8\"\n")
+end
+function file_exists(path)
+	local file = io.open(path, "r")
+	if file then file:close() end
+	return file ~= nil
+
+end
+function print_index_stat()
+	local stat, iwinfo = pcall(require, "iwinfo")
+	local phy_status = 1                         
+	local uci = uci.cursor()
+	local nettype
+	local wanname=uci:get("network", "wan", "ifname")
+	if (wanname) then
+		levle = iwinfo.get_phy_connect(wanname)        
+	else
+		levle = iwinfo.get_phy_connect("wan")        
+	end
+	for k, v in ipairs(levle or { }) do          
+    		if k or v then                           
+        		phy_status = v                       
+    		end                                      
+	end                                        
+	tx_rate = 0
+	rx_rate = 0
+	spdf = nixio.open(resfile, "r")
+        if (spdf) then
+                file.lock(spdf, "lock")
+		resd=file.read(spdf,100)
+                file.lock(spdf, "ulock")
+		file.close(spdf)
+	end
+	if(resd) then
+		me, me2, tx_rate, rx_rate = string.find(resd,'(%d*),(%d*)')
+	end
+	--print(resd, tx_rate, rx_rate)
+--[[
+	local mark = 0
+	local rx_rate=uci:get("speed", "wan", "down")
+	if (rx_rate == nil) then 
+		uci:set("speed", "wan", "down", "0")
+		mark = 1 
+		rx_rate = 1000
+	end
+	
+	local tx_rate=uci:get("speed", "wan", "up")
+	if (tx_rate == nil) then 
+		uci:set("speed", "wan", "up", "0")
+		mark = 1 
+		tx_rate = 500
+	end
+	if (mark) then
+		uci:commit("speed")
+	end
+]]--
+    devicenum = 4
+	local devname24g = cur:get_name_by_ifname("wireless", "wifi-device", "band", "2.4G")
+	if devname24g then
+		wifi2g=uci:get("wireless", devname24g, "disabled")
+	end
+	
+	local devname5g = cur:get_name_by_ifname("wireless", "wifi-device", "band", "5G")
+	if devname5g then
+		wifi5g=uci:get("wireless", devname5g, "disabled")
+	end
+	if (wifi2g ==nil) then
+		wifi2g = 0
+	end
+	if (wifi5g ==nil) then
+		wifi5g = 0
+	end
+	wifi2g = 1 - wifi2g
+	wifi5g = 1 - wifi5g
+	print_json() 
+	local str = [[{"rx_rate":]] ..rx_rate/2
+	str = str .. [[, "tx_rate":]] ..tx_rate/2
+	str = str .. [[,"phy_connect":]]..phy_status
+	str = str .. [[,"devicenum":]]..devicenum
+	str = str .. [[,"wifi2G_on_off":]]..wifi2g
+	str = str .. [[, "wifi5G_on_off":]]..wifi5g .."}"
+--{"rx_rate":0, "tx_rate":0,"phy_connect":0,"devicenum":1,"wifi2G_on_off":1, "wifi5G_on_off":1}
+	print(str)
+end
+function print_net_stat()
+	local stat, iwinfo = pcall(require, "iwinfo")
+	local phy_status = 1                         
+	local uci = uci.cursor()
+	local nettype
+	local wanname=uci:get("network", "wan", "ifname")
+	if (wanname) then
+		levle = iwinfo.get_phy_connect(wanname)        
+	else
+		levle = iwinfo.get_phy_connect("wan")        
+	end
+	for k, v in ipairs(levle or { }) do          
+    		if k or v then                           
+        		phy_status = v                       
+    		end                                      
+	end                                        
+	local wanpro=uci:get("network", "wan", "detectwanproto")
+	if (wanpro) then 
+		if (wanpro == "PPPOE") then
+			nettype = 1 
+		elseif (wanpro == "STATIC") then
+			nettype = 2
+		else 
+			nettype = 0
+		end
+	else
+		nettype = 0
+	end
+	wan2 = netm:get_wannet()
+    	if wan2 then
+        	wanip  = wan2:ipaddr()
+    	else
+		wanip = 0	
+	end
+	PingWan = "1"
+	err ="0"
+	print_json()
+	local str = [[[{"phy_connect":]]..phy_status.."},{"
+	str = str .. [["NetworkType":]]..nettype..","
+	str = str .. [["WanIp":"]]..wanip..[[",]]
+	str = str .. [["ErrorCode":"]]..err.."\"}]"
+	print(str)
+end
+function print_wan_connect()
+	local stat, iwinfo = pcall(require, "iwinfo")
+	local phy_status = 1                         
+	levle = iwinfo.get_phy_connect("wan")        
+	for k, v in ipairs(levle or { }) do          
+    		if k or v then                           
+        		phy_status = v                       
+    		end                                      
+	end                                        
+	print_json()
+	print("{\"phy_connect\":"..phy_status.."}")                
+end
+function print_start_detect(val)
+	local res = file_exists("/tmp/autonetwork.lock")
+	local rt = 0
+	local sys = require "luci.controller.admin.system"
+	print_json()
+	if(res ==ture) then
+		rt =1
+	else 
+		rt = 0
+	end
+	if(val == 1) then
+		sys.fork_exec("autonetwork")	
+		rt = 1
+		print("{\"begin\":"..rt.."}")                
+	else 
+		print("{\"detectval\":"..rt.."}")                
+	end
+end
+function print_wan_link()
+	local stat, iwinfo = pcall(require, "iwinfo")
+	local uci = uci.cursor()
+	local phy_status = 1                         
+	local wanname=uci:get("network", "wan", "ifname")
+        if (wanname) then       
+                levle = iwinfo.get_phy_connect(wanname)
+        else                                     
+                levle = iwinfo.get_phy_connect("wan")
+        end                       
+	for k, v in ipairs(levle or { }) do          
+    		if k or v then                           
+        		phy_status = v                       
+    		end                                      
+	end                                        
+	print_json()
+	print("{\"inet_link\":"..phy_status.."}")                
+end
+if (query_string) then 
+	local rel=string.find(query_string,"get=wan")
+	if(rel) then
+		print_wan_connect()
+	end 
+	rel=string.find(query_string,"get=start")
+	if(rel) then
+		print_start_detect(1)
+	end 
+	rel=string.find(query_string,"get=end")
+	if(rel) then
+		print_start_detect(2)
+	end 
+	rel=string.find(query_string,"get=net")
+	if(rel) then
+		print_net_stat()
+	end
+	rel=string.find(query_string,"get=index")
+	if(rel) then
+		print_index_stat()
+	end
+	rel=string.find(query_string,"get=link")
+	if(rel) then
+		print_wan_link()
+	end
+else
+	print_json()
+	print("{}")
+end

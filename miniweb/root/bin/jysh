@@ -1,0 +1,237 @@
+#! /bin/sh
+
+. /lib/functions/system.sh
+. /lib/functions/uci-defaults.sh
+
+get_factory()
+{
+	cat /proc/mtd|sed -n '/Factory/s/\([^:]\+\):.*/\1/p'|sed 's/mtd/mtdblock/'
+}
+GPIO_WPS_RST=12
+GPIO_WPS_LED=39
+GPIO_WAN_LED=40
+GPIO_24G_LED=72
+ETH_MAC="/usr/bin/eth_mac"
+PROC_ETH_STATUS="/proc/net/raeth_port/eth"
+
+trap 'echo' SIGINT 
+
+show_usage()
+{
+	PRO="product"
+	echo "Usage:"
+	echo -e "\t${PRO}  system get mac             -- show system mac"
+	echo -e "\t${PRO}  system set mac <mac>       -- set system mac"
+	echo -e "\t${PRO}  system get waninfo         -- show wan info"
+	echo -e "\t${PRO}  system get version         -- show system version"
+	echo -e "\t${PRO}  system get eth_status      -- show eth status"
+	echo -e "\t${PRO}  system set factory_config  -- restore factory config,need reboot system"
+	echo -e "\t${PRO}  system set default_config  -- restore default config,need reboot system"
+	echo -e "\t${PRO}  system get config_mode     -- show config mode"
+	echo -e "\t${PRO}  system reboot              -- reboot system"
+	echo -e "\t${PRO}  button enable              -- enable button function"
+	echo -e "\t${PRO}  button disable             -- diable button function"
+	echo -e "\t${PRO}  button get                 -- get button input"
+	echo -e "\t${PRO}  led on                     -- led on"
+	echo -e "\t${PRO}  led off                    -- led off"
+	echo -e "\t${PRO}  led restore                -- led restore"
+}
+
+MTD_FAC="/dev/$(get_factory)"
+PASSWD="jieyun.com"	
+
+while :
+do
+	read -p"product@JYUNOS #" input
+
+	PARA_NUM=`echo $input|awk '{print NF}'`
+
+	if [ -z "$input" ];then
+		continue
+	fi	
+
+	if [ ${PARA_NUM} -lt 3 ];then
+		show_usage
+		continue
+	fi
+		
+	ARGV0=`echo $input|awk '{print $1}'`	
+	ARGV1=`echo $input|awk '{print $2}'`	
+	ARGV2=`echo $input|awk '{print $3}'`	
+	if [ $PARA_NUM -ge 4 ];then
+		ARGV3=`echo $input|awk  '{print $4}'`	
+	fi
+
+	if [ $PARA_NUM -ge 5 ];then
+		ARGV4=`echo $input|awk  '{print $5}'`	
+	fi
+
+	case "${ARGV1}" in
+		system)
+			case "${ARGV2}" in
+				set)
+					case "${ARGV3}" in
+							mac)
+								if [ -n "${ARGV4}" ];then
+									lan_mac=${ARGV4}
+									wan_mac=$(macaddr_add "$lan_mac" 1)
+									wifi_mac=$(macaddr_add "$lan_mac" 2)
+
+                							${ETH_MAC} w lan `echo ${lan_mac} | sed -e "s/:/ /g"`
+                							${ETH_MAC} w wan `echo ${wan_mac} | sed -e "s/:/ /g"`
+                							${ETH_MAC} w wifi `echo ${wifi_mac} | sed -e "s/:/ /g"`
+
+								        [ -n "$lan_mac" ] && ucidef_set_interface_macaddr lan "$lan_mac"
+       									[ -n "$wan_mac" ] && ucidef_set_interface_macaddr wan "$wan_mac"
+
+									echo "ok"
+								fi
+								;;
+
+						factory_config)
+								mv /etc/rc.d/K101telnetd /etc/rc.d/S101telnetd &>/dev/null 
+								sed -i 's/STOP=/START=/' /etc/init.d/telnetd &>/dev/null
+								mv /etc/rc.d/K110ated /etc/rc.d/S110ated &>/dev/null
+								sed -i 's/STOP=/START=/' /etc/init.d/ated &>/dev/null
+								;;
+						default_config)
+                    						echo -n -e $'\x11\x11' | dd bs=1 seek=2048 of=$MTD_FAC count=2 conv=notrunc 2>/dev/null
+								mv /etc/rc.d/S101telnetd /etc/rc.d/K101telnetd &>/dev/null
+								sed -i 's/START=/STOP=/' /etc/init.d/telnetd  &>/dev/null
+								mv /etc/rc.d/S110ated /etc/rc.d/K110ated &>/dev/null
+								sed -i 's/START=/STOP=/' /etc/init.d/ated &>/dev/null
+								;;	
+	
+						console)
+							echo -n "Passwd:"
+							read -s password
+							echo
+							if [ "x${password}" = "x${PASSWD}" ];then
+								echo "check passwd ok."
+								sed -i 's#sbin/jysh#bin/ash#' /etc/inittab
+								sed -i 's#sbin/jysh#bin/ash#' /etc/init.d/telnetd
+							fi
+							;;
+					esac
+					;;
+				get)
+					case "${ARGV3}" in
+						mac)
+							${ETH_MAC} r lan
+							;;
+						config_mode)
+							cat /etc/init.d/telnetd|grep -q "START="
+     							if [[ $? -eq 0 ]]; then
+								echo "factory_config"
+							else     
+								cat /etc/init.d/telnetd|grep -q "STOP="
+     						       		if [[ $? -eq 0 ]]; then
+									echo "default_config"
+								else
+									echo "fail"
+								fi
+     					       		fi
+							
+							;;
+						version)
+							awk '/fw_ver/{print $NF}' /etc/config/system	
+							
+							;;
+						eth_status)
+							ETH_STATUS=$(cat $PROC_ETH_STATUS)
+							PORT1=$(echo $ETH_STATUS|awk '{print $1}')
+							PORT2=$(echo $ETH_STATUS|awk '{print $2}')
+							PORT3=$(echo $ETH_STATUS|awk '{print $3}')
+							PORT4=$(echo $ETH_STATUS|awk '{print $4}')
+							PORT5=$(echo $ETH_STATUS|awk '{print $5}')
+							if [ $PORT1 -eq 0 ];then
+								echo "WAN  : off"
+							else
+								echo "WAN  : on"
+							fi
+							if [ $PORT2 -eq 0 ];then
+								echo "LAN1 : off"
+							else
+								echo "LAN1 : on"
+							fi
+									
+							if [ $PORT3 -eq 0 ];then
+								echo "LAN2 : off"
+							else
+								echo "LAN2 : on"
+							fi
+
+							if [ $PORT4 -eq 0 ];then
+								echo "LAN3 : off"
+							else
+								echo "LAN3 : on"
+							fi
+							if [ $PORT5 -eq 0 ];then
+								echo "LAN4 : off"
+							else
+								echo "LAN4 : on"
+							fi
+							;;
+						waninfo)
+							WANPROTO=$(uci get network.wan.proto)
+							WANIP=$(uci get network.wan.ipaddr)
+							WANMASK=$(uci get network.wan.netmask)
+							echo  "wan proto   : $WANPROTO"
+							echo  "wan ip      : $WANIP"
+							echo  "wan netmask : $WANMASK"
+							;;
+					esac
+					;;
+
+				reboot)
+					reboot
+					;;
+				reset)
+					/etc/btnd/wps_hold.sh
+					;;
+			esac
+			;;
+		button)
+			case "${ARGV2}" in
+				enable)
+					btnd wps 38 &
+					echo "ok"
+					;;
+				disable)
+					BTND_PID=`pidof btnd`
+					kill -9 ${BTND_PID} &>/dev/null
+					gpio i 38  &>/dev/null
+					;;
+				get)
+					gpio t 38 
+					;;
+			esac
+			;;
+		led)
+			case "${ARGV2}" in
+				on)
+					gpio m 44 1
+					gpio w
+					;;
+				off)
+					gpio m 44 1
+					gpio r  >/dev/null
+					;;
+				restore)
+					gpio m 44 0
+					gpio l 37 1 1 1 1 1
+					;;
+				*)
+				
+					show_usage
+					continue
+					;;
+			esac
+			;;
+		
+		*)
+			show_usage
+			continue
+			;;
+	esac
+done

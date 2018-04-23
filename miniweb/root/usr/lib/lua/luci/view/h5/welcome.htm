@@ -1,0 +1,142 @@
+<%#
+
+    DISCREPTION   : LuCI - Lua Configuration Interface - quick guide support
+    CREATED DATE  : 2016-05-25
+    MODIFIED DATE : 
+-%>
+<%
+require "luci.dispatcher"
+%>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalabel=no" />
+    <link rel="stylesheet" href="<%=media%>/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<%=media%>/css/web_phone.css">
+    <script src="<%=media%>/js/jquery-1.11.2.min.js"></script>
+    <script src="<%=media%>/js/bootstrap.min.js"></script>        
+    <%+title%>
+</head>
+<body>
+<form method="post" name="h5_welcome" action="<%=luci.dispatcher.build_url("admin", "h5", "welcome")%>">         
+    <input name="welcomeaction" value="" type="hidden">
+    <div class="setcontent">
+        <div id="homepagediv">
+                <div class="margintop-10">
+                <img class="width-60" src="<%=media%>/images/jyunwifi_color.png" />
+            </div>
+            <div class="margintop-2">
+                <span class="color-gray" style="font-size: 1.5em">               </span>
+            </div>
+            <div class="margintop-20">
+                <span style="font-size: 34px;">欢迎使用</span>
+            </div>
+            <div class="margintop-20" style="margin-top: 30%;">
+            </div>
+            <div class="margintop-5">
+                <button type="button" id="autodetect" class="btn-square-lg" data-toggle="modal" id="start_btn">
+                    开始体验<span id="timer" style="padding-left: 5px;"></span>
+                </button>                    
+            </div>
+            <div class="margintop-5"><a id="pc_web">进入电脑版页面</a></div>
+        </div>            
+        <div id="userprotocoldiv" style="display: none;">
+            <div class="img_phiwifi">
+                <img src="<%=media%>/images/jyunwifi_color.png" />
+            </div>    
+            <div class="title-underline"></div>
+            <div class="margintop-1"  id="img_back">
+            </div>
+        </div>
+        <div class="modal fade margintop-20" id="myModal">
+            <div class="modal-dialog">
+                <div class="modal-content" style="background-color: #F5F5F5;">
+                    <div class="msg2"><img src ="<%=media%>/images/load_gray.gif" /></div>
+                    <div class="msg1">正在检测上网方式</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    $(function(){
+        $("#start_btn").click(function(){
+            var count = 3;
+            var id_num = setInterval(function(){
+                $("#timer").html(count+"S");
+                if(count==0){
+                    $("#myModal").modal('show');
+                    clearInterval(id_num);
+                }else{
+                    count--;                        
+                }
+            },1000);                
+        });
+        
+        $("#user_protocol").click(function(){
+            $("#userprotocoldiv").show();
+            $("#homepagediv").hide();
+        });
+        
+        $("#img_back").click(function(){
+            $("#userprotocoldiv").hide();
+            $("#homepagediv").show();
+        });        
+        
+        $("#img_check").click(function(){
+            var imgname = $(this).attr("src");
+            if(imgname == "<%=media%>/images/checkbox_nocheck.png"){
+                $("#img_check").attr("src","<%=media%>/images/checkbox_checked.png");
+                $("#autodetect").attr("disabled",false);
+            }else{
+                $("#img_check").attr("src","<%=media%>/images/checkbox_nocheck.png");
+                $("#autodetect").attr("disabled",true);
+            }
+        });
+    })
+    
+    $("#pc_web").click(function(){
+        document.h5_welcome.welcomeaction.value = "pcweb";
+        document.h5_welcome.submit();
+    });
+    
+    $("#autodetect").click(function(){
+        document.h5_welcome.welcomeaction.value = "autodetect";
+        $("#myModal").modal('hide');
+        document.h5_welcome.submit(); 
+    });
+    <% if 1 == autodetect then %>
+    $("#myModal").modal('show');
+    var timer1 = 0;
+    var counter = 0;
+    timer1=setInterval("timeoutfunc()",2000);
+    function timeoutfunc(){
+        counter=counter+1;
+        if(counter>=5){
+            clearInterval(timer1);
+            detectfinish();
+        } else {
+            $.ajax({
+            type:"post",
+            url:"/vcapi/getdevicestatus?get=end",
+            success:function(s)
+            {
+              if(s.detectval)
+              {
+                  clearInterval(timer1);
+                  detectfinish();
+              }
+            }
+            }
+            );
+        }
+    }
+    function detectfinish()
+    {
+        window.location.href="<%=luci.dispatcher.build_url("admin", "h5", "autodetectfinish")%>";
+    }
+    <% end %>
+</script>
+</html>

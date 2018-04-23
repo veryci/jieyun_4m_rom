@@ -1,0 +1,906 @@
+<%
+	local sys  = require "luci.sys"
+	local http = require "luci.http"
+	local disp = require "luci.dispatcher"
+%>  
+<script >
+      media_path = "<%=media%>/";
+      no_clone_str = "<%:no clone%>";
+      auto_clone_str = "<%:auto clone%>";
+      input_clone_str = "<%:input clone%>";
+      cur_mac_addr_str = "<%:curent mac addr:%>";
+<%
+      local uci = uci.cursor()
+      local password = uci:get("system", "weblogin", "password")
+      local timerebootstatus = uci:get("timereboot", "timereboot", "enable")
+      local timereboottime = uci:get("timereboot", "timereboot", "time")
+      local timereboothour = nil
+      local timerebootmin = nil
+      if not timereboottime then
+        timereboottime = "00:00"
+      end
+      timereboothour = string.sub(timereboottime,1,2)
+      timerebootmin = string.sub(timereboottime,4,5)
+%>
+      var rebootneedrelogin = 0;
+      $(function(){
+          $('.content_body').niceScroll({
+              cursorcolor: "#CCCCCC",
+              cursoropacitymax: 1, 
+              touchbehavior: false, 
+              cursorwidth: "10px", 
+              cursorborder: "0", 
+              cursorborderradius: "5px",
+              autohidemode: false 
+          });
+          $('.content').niceScroll({
+              cursorcolor: "#CCCCCC",
+              cursoropacitymax: 1, 
+              touchbehavior: false, 
+              cursorwidth: "5px", 
+              cursorborder: "0", 
+              cursorborderradius: "5px",
+              autohidemode: false 
+          });
+          $("#restart").click(function(){
+              restart_flag = true;
+              $("#confirm_bt").html("确认");
+              Alert("是否确认重启？",true);
+              
+          })
+	
+        $("#confirm_bt").click(function(){
+            $("#myAlert").modal("hide");
+            if(restart_flag == true){
+                restart_flag = false;
+                $("#confirm_bt").html("确定");
+                $.ajax({
+                    type:"post",
+                    url:"<%=luci.dispatcher.build_url("admin","system","reboot")%>",
+                    success: function(msg){
+                        $("#progress_content_up").html("设备重启中...");
+                        $("#progress_content_down").html("路由器重启中，请勿切断电源！");
+                        start_progress_bar(60);
+                        rebootneedrelogin = 1;
+                    }
+                });            
+            }
+            if(wps_refresh == true)
+            {
+               window.location.reload();
+            }
+        })
+        
+        $("#timeRebootEnable").click(function(){
+           var value =  $(this).attr("value");
+           if(value == 0){
+                $("#timeRebootDiv").css({opacity:"1",filter:"alpha(opacity=100)"});
+                $(this).attr("value","1");
+                $("#timeRebootEnablestatus").val("on");
+           }else{
+                $("#timeRebootDiv").css({opacity:"0",filter:"alpha(opacity=0)"});
+                $(this).attr("value","0") ;
+                $("#timeRebootEnablestatus").val("off");
+           }
+        })
+        $(".timeRebootUl").find("li").click(function(){
+            var value = $(this).find("a").attr("value");
+            $(this).parents(".dropdown_div").find("input").val(value);
+        })
+        
+        <% if timerebootstatus == "on" then%>
+            $("#timeRebootDiv").css({opacity:"1",filter:"alpha(opacity=100)"});
+        <%else%>
+            $("#timeRebootDiv").css({opacity:"0",filter:"alpha(opacity=0)"});
+        <%end%>
+        $("#timeRebootSave").click(function(){
+            $("#timeRebootrange").val($("#timereboothour").val() + ":" + $("#timerebootmin").val());
+            $("#cururl").val(location);
+            $("form[name='from_time_reboot']").submit();
+        })
+        
+      });
+var err_num = 0;
+var warn_num = 0;
+var router_frac = 100;
+var isCheckNet = 1;
+var time_stop;
+var time_stop_twice;
+var checkNUm = 0;
+var isCheck = 0;
+
+var currentVersion;    //当前软件版本
+var newVersion;        //最新软件版本
+var swPt;              //发布日期
+var sw_verdesc = "";  
+var str_load =".";
+var load_timer;
+function check_load(){
+    str_load = str_load +".";
+    if(str_load.length > 6){
+        str_load = ".";
+    }
+    $("#check_loading").html(str_load);
+}
+
+function set_default(){
+    clearTimeout(time_stop);
+
+    err_num = 0;
+    warn_num = 0;
+    router_frac = 100;
+    checkNUm = 0;
+    isCheckNet = 1;
+    isCheck = 0;
+    
+    $("#wan_fault_det").hide();
+    $("#wan_fault_det_ok").hide();  
+    $("#wan_fault_det_result").hide(); 
+    
+    $("#inte_status_det").hide();
+    $("#inte_status_det_ok").hide();  
+    $("#inte_status_det_result").hide(); 
+    
+    $("#wifi_status_det").hide();
+    $("#wifi_status_det_ok").hide();  
+    $("#wifi_status_det_result_2").hide(); 
+    $("#wifi_status_det_result_5").hide(); 
+    $("#wifi_status_det_result_sig").hide(); 
+    
+    $("#wifi_pwd_det").hide();
+    $("#wifi_pwd_det_ok").hide();  
+    $("#wifi_pwd_det_result_2").hide(); 
+    $("#wifi_pwd_det_result_5").hide(); 
+    
+    $("#router_pwd_det").hide();
+    $("#router_pwd_det_ok").hide();  
+    $("#router_pwd_det_result").hide(); 
+    
+    $("#firmware_ver_det").hide();
+    $("#firmware_ver_det_ok").hide();  
+    $("#firmware_ver_det_result").hide();
+    $("#title1").show();
+    $("#title2").hide();
+    $("#fault_det").hide();
+    $("#sys_alert").hide();
+}
+
+function begin_check()
+{
+    clearTimeout(time_stop);
+    clearTimeout(time_stop_twice);
+    err_num = 0;
+    warn_num = 0;
+    router_frac = 100;
+    checkNUm = 0;
+    isCheckNet = 1;
+    isCheck = 1;
+    
+    $("#wan_fault_det").hide();
+    $("#wan_fault_det_ok").hide();  
+    $("#wan_fault_det_result").hide(); 
+    
+    $("#inte_status_det").hide();
+    $("#inte_status_det_ok").hide();  
+    $("#inte_status_det_result").hide(); 
+    
+    $("#wifi_status_det").hide();
+    $("#wifi_status_det_ok").hide();  
+    $("#wifi_status_det_result_2").hide(); 
+    $("#wifi_status_det_result_5").hide(); 
+    $("#wifi_status_det_result_sig").hide(); 
+    
+    $("#wifi_pwd_det").hide();
+    $("#wifi_pwd_det_ok").hide();  
+    $("#wifi_pwd_det_result_2").hide(); 
+    $("#wifi_pwd_det_result_5").hide(); 
+    
+    $("#router_pwd_det").hide();
+    $("#router_pwd_det_ok").hide();  
+    $("#router_pwd_det_result").hide(); 
+    
+    $("#firmware_ver_det").hide();
+    $("#firmware_ver_det_ok").hide();  
+    $("#firmware_ver_det_result").hide(); 
+    
+    XHR.get('<%=luci.dispatcher.build_url("admin", "index", "gra_checkistimeout")%>',null,
+    function(x,s)
+    {
+      if(s == "timeout")
+        location.href = location.href;
+      else
+      {
+        $("#title1").hide();
+        $("#title2").show();
+        $("#title2span").html("体检进行中");
+        load_timer=setInterval(check_load,500);
+        $("#score").show();
+        $("#title2span").removeAttr("style");
+        $("#score").css("background",'url("<%=media%>/images/oncheckload.gif") no-repeat');
+        $("#score").html(router_frac);
+        $("#fault_det").show();
+        $("#sys_alert").show();
+        time_stop = setTimeout("fun_sys_error_1()", 2000);
+      }
+    });
+}
+
+var progress_bar_cur_num=0;
+var progress_bar_timer;
+      
+function checklocation()
+{
+    if(1 == rebootneedrelogin)
+    {
+        rebootneedrelogin = 0;
+        var curlanip = "<%=uci:get("network","lan", "ipaddr")%>";
+        window.location.href = "http://" + curlanip;
+    }
+}
+      
+function Progress_Bar_Modalhide(){
+
+    $("#close_progress_button").click();
+    <% if restore_avail or upgrading then %>
+    var lanip = "<%=uci:get("network","lan", "ipaddr")%>";
+    window.location.href = "http://" + lanip;
+    <% elseif reset_process then %>
+    var lanip = "<%=uci:get("factory","default_ip","ip")%>";
+    window.location.href = "http://" + lanip;
+    <% else%>
+        checklocation();
+    <% end %>
+}
+function start_progress_bar(progress_bar_time){
+    $("#progress_bar_buttom").click();
+    $("#progress_bar").attr("style","width:0px");
+    $("#progress_bar").animate({width:$("#progress_bar").attr("w")+"px"},progress_bar_time*1100,function(){
+        Progress_Bar_Modalhide();
+    });
+    
+}
+function check_version(){
+    <%
+        local uci = uci.cursor()
+    %>
+    var pop_upgrade=<%=uci:get("onekeyupgrade","config","pop_upgrade") or "0"%>;
+
+    if((pop_upgrade == 1) || (pop_upgrade == 2))
+    {
+        XHR.get('<%=luci.dispatcher.build_url("admin", "index", "gra_checkversion")%>',null,
+            function(x,s){
+                if(s[0].retstate == 1)
+                {
+                    if(s[0].VerNum == 1)
+                    {
+                        newVersion = s[0].version;        //最新软件版本
+                        swPt = s[0].pubtime;             //发布日期
+                        if(s[0].versiondesc)
+                            sw_verdesc = s[0].versiondesc;
+                        currentVersion = s[0].CurNum;    //当前软件版本
+
+                        sw_verdesc = unescape(sw_verdesc.replace(/#x/g,'%u').replace(/;/g,''));
+                        $("#onecheck_list").click();
+                        $("#upgrade_button").click();
+
+                        $("#sw_alert1").html(currentVersion);
+                        $("#sw_alert2").html(newVersion);
+                        $("#sw_alert3").html(swPt);
+                        $("#sw_alert4").html(sw_verdesc);
+                    }
+                }
+            }
+        );
+    }
+}
+
+$(function(){
+    //check_version();
+
+    $("#onekeycheck_button").click(function(){
+        $("#onekeycheck_button").hide();
+        $("#onecheckmodal_body_1_div").show();
+        
+        begin_check();
+    });
+    
+    $(".onecheck_close").click(function(){
+        clearTimeout(time_stop);
+        time_stop_twice = setTimeout("clear_onecheck_close()", 2000);
+        set_default();
+        $("#onekeycheck_button").show();
+
+        $("#onekeycheck_button").html("开始体检");
+
+        clearTimeout(load_timer);
+        $("#check_loading").html("");
+        $("#onecheckmodal_body_1_div").hide();
+
+    });
+    
+    $("#save_pwd").click(function(){
+        var str_pwd_old = $("#pwd_old").val();
+        var str_pwd_new1 = $("#pwd_new1").val();
+        var str_pwd_new2 = $("#pwd_new2").val();
+        
+        if(str_pwd_old == "" || str_pwd_old.length == 0)
+        {
+            $("#error_msg").show();   
+            $("#error_msg").html("<%:index old pwd empty%>");
+        }
+        else if( base64encode(utf16to8(str_pwd_old)) != "<%=password%>")
+        {
+            $("#error_msg").show();   
+            $("#error_msg").html("原管理员密码输入错误！");
+        }
+        else if(str_pwd_new1 == "" || str_pwd_new1.length == 0)
+        {
+            $("#error_msg").show();   
+            $("#error_msg").html("<%:index new pwd empty%>");
+        }
+        else if(str_pwd_new2 == "" || str_pwd_new2.length == 0)
+        {
+            $("#error_msg").show();   
+            $("#error_msg").html("<%:index query pwd empty%>");
+        }
+        else if(str_pwd_new1 != str_pwd_new2){
+            $("#error_msg").show();   
+            $("#error_msg").html("新管理员密码两次输入不一致！");
+        }
+        else if(str_pwd_new1 == str_pwd_old){
+            $("#error_msg").show();   
+            $("#error_msg").html("新旧管理员密码相同，请修改！");
+        }
+        else
+        {
+            var v = str_pwd_new1
+            var error = 0;
+            
+            if( v.length == 64 )
+            {
+                if(v.match(/^[a-fA-F0-9]{64}$/) == null)
+                {
+                    error = 1;
+                }
+            }
+            else
+            {
+                if((v.length >= 5) && (v.length <= 63))
+                {
+                    for(var i = 0; i < v.length; i++)
+                    {
+                        if(v.charAt(i) < ' ' || v.charAt(i) > '~')
+                        {
+                            error = 1;                            
+                            break;
+                        }
+                        
+                        if(v.charAt(i).match(/[\u00B7]/)
+                            || v.charAt(i).match(/[\u0022]/) || v.charAt(i).match(/[\u0026]/)
+                            || v.charAt(i).match(/[\u003E]/) || v.charAt(i).match(/[\u003C]/)//<>
+                            || v.charAt(i).match(/[\u005C]/) || v.charAt(i).match(/[\u0027]/)
+                            || v.charAt(i).match(/[\u0028]/) || v.charAt(i).match(/[\u0029]/)//()
+                            || v.charAt(i).match(/[\u007B]/) || v.charAt(i).match(/[\u007D]/)//{}
+                            || v.charAt(i).match(/[\u0025]/)
+                            || v.charAt(i).match(/[\u003A]/) || v.charAt(i).match(/[\u003B]/)//:;
+                            || v.charAt(i).match(/[\u002C]/)//,
+                            || v.charAt(i).match(/[\u0024]/)//$
+                            || v.charAt(i).match(/[\u007C]/)//|
+                            || v.charAt(i).match(/[\u0060]/)//`
+                            || v.charAt(i).match(/[\u007E]/)//~
+                            || v.charAt(i).match(/[\u0026]/))//&
+                        { 
+                            error = 2;                            
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    error = 1;
+                }
+            }
+
+               if(1 == error)
+            {
+                $("#error_msg").html("<%:multlangjs_5_63asc_8_64hex%>");
+                $("#error_msg").show();
+            }
+            else if(2 == error)
+            {
+                $("#error_msg").html(error_msg[31][1]);
+                $("#error_msg").show();
+            }
+            else
+            {
+                $("#pwd_new1").val(base64encode(utf16to8(str_pwd_new1)));
+                $("form[name='frm_change_pwd']").submit();
+            }
+        }
+            
+        
+    });
+    
+    $("#wanlink_up").click(function(){
+        XHR.get('<%=luci.dispatcher.build_url("admin", "index", "get_phy_connect", "wan")%>',null,
+            function(x,s)
+            {
+                if(s[0].phy_connect == 1)
+                {
+                    $("#wan_fault_det_result").hide();
+                    $("#wan_fault_det_ok").show();
+                    router_frac = router_frac + 15;
+                    err_num = err_num - 1;
+                    $("#score").html(router_frac);
+                    if (isCheckNet == 0 && checkNUm == 5)
+                        $("#title2span").html("发现<span style='color:#00bdff;'>"+err_num+"</span>个故障<span style='color:#00bdff;'>"+warn_num+"</span>个提醒，建议立即修复");
+                }
+                else
+                {
+                    $("#wan_fault_det_ok").hide();
+                    $("#wan_fault_det_result").show();
+                }
+            }
+            );    
+    });
+
+    $("#network_list").click(function(){
+        window.location.href = "<%=luci.dispatcher.build_url("admin", "networkset")%>";   
+    });
+
+    $(".wifi_list").click(function(){
+        window.location.href = "<%=luci.dispatcher.build_url("admin", "wifiset")%>";   
+    });
+
+    $("#signal_en").click(function(){
+        window.location.href = "<%=luci.dispatcher.build_url("admin", "more_signal")%>";   
+    });
+
+    $("#pwd_list").click(function(){
+        $("#onecheck_list").click(); 
+        $("#change_pwd").click();   
+    });
+
+    $("#update_button").click(function(){
+        sw_verdesc = unescape(sw_verdesc.replace(/#x/g,'%u').replace(/;/g,''));
+        $("#onecheck_list").click(); 
+        $("#upgrade_button").click();
+
+        $("#sw_alert1").html(currentVersion);
+        $("#sw_alert2").html(newVersion);
+        $("#sw_alert3").html(swPt);
+        $("#sw_alert4").html(sw_verdesc);
+    });
+
+    $("#savebackup").click(function(){     //一键升级
+        $("#upgrade_button").click();
+        $("#wan_check_modal").find(".loading_msg_span").html("正在处理...");
+        $("#wan_check_modal").modal("show");
+        upgrade_pop_close(doOnekeyUpgrade);
+    });
+    
+    $("#cancelbackup").click(function(){
+        upgrade_pop_close();
+    });
+    
+    $("#change_pwd").click(function(){
+        $("#error_msg").hide();   
+    });
+});
+
+function upgrade_pop_close(callback)
+{
+    var pop_upgrade=<%=uci:get("onekeyupgrade","config","pop_upgrade") or "0"%>;
+
+    if(pop_upgrade == 1 || pop_upgrade == 2)
+    {
+        XHR.get('<%=luci.dispatcher.build_url("admin", "index", "gra_upgrade_pop")%>',null,
+            function(x,s){
+                callback && callback();
+            }
+        );
+    }
+}
+if (!Array.prototype.indexOf){  
+        Array.prototype.indexOf = function(elt /*, from*/){  
+        var len = this.length >>> 0;  
+        var from = Number(arguments[1]) || 0;  
+        from = (from < 0)  
+             ? Math.ceil(from)  
+             : Math.floor(from);  
+        if (from < 0)  
+          from += len;  
+        for (; from < len; from++)  
+        {  
+          if (from in this &&  
+              this[from] === elt)  
+            return from;  
+        }  
+        return -1;  
+      };  
+} 
+
+function doOnekeyUpgrade()
+{
+    document.frm_OneKey.submit();
+}
+
+function clear_onecheck_close()
+{
+    clearTimeout(time_stop);
+}
+
+function fun_sys_error_1()
+{
+    checkNUm = checkNUm + 1;
+    XHR.get('<%=luci.dispatcher.build_url("admin", "index", "get_phy_connect", "wan")%>',null,
+        function(x,s)
+        {
+            if( !isCheck )
+                return;
+            if (s[0].phy_connect == 1)
+            {
+                $("#wan_fault_det").show();
+                $("#wan_fault_det_ok").show();
+                time_stop = setTimeout("fun_sys_error_2()", 1000);
+            }
+            else
+            {
+                $("#wan_fault_det").show();
+                        $("#wan_fault_det_result").show();  //WAN口未连接
+                        err_num = err_num + 1;
+                        router_frac = router_frac - 30;
+                        isCheckNet = 0;
+                        $("#score").html(router_frac);
+                        time_stop = setTimeout("fun_sys_error_3()", 2000);
+                    }
+                }
+                );
+}
+
+function fun_sys_error_2()
+{
+    checkNUm = checkNUm + 1;
+    XHR.get('<%=luci.dispatcher.build_url("admin", "index", "gra_InternetCheck")%>',null,
+        function(x,s)
+        {
+            if( !isCheck )
+                return;
+            if(s[0].PingQQ == 1)
+            {
+                    //可以Ping通QQ
+                    $("#inte_status_det").show();
+                    $("#inte_status_det_ok").show();
+                    time_stop = setTimeout("fun_sys_error_3()", 2000);
+                }
+                else  //不可以Ping通QQ
+                {
+                    $("#inte_status_det").show();
+                    $("#inte_status_det_result").show(); 
+                    if(s[0].NetworkType == 2)  //静态IP问题
+                    {
+                        //静态IP问题
+                        $("#inte_status_det_result").find("span").html("静态IP设置有问题，静态IP上网方式有别于自动方式（DHCP）和宽带拨号上网方式，使用前请确认当前网络是否是静态IP网络，如果是，请向网络管理员核实IP地址、子网掩码、网关、首选DNS、备用DNS等参数");
+                    }
+                    else if(s[0].NetworkType == 1) //PPPOE问题
+                    {
+                        if(s[0].WanIp == 0)   //WAN口无IP
+                        {
+                            if(s[0].ErrorCode == 709)
+                            {
+                                //PPPOE密码太短或者不匹配
+                                $("#inte_status_det_result").find("span").html("宽带密码太短或者与可能与以前使用的密码不匹配，请联系宽带运营商");
+                            }
+                            else if(s[0].ErrorCode == 691)
+                            {
+                                //PPPOE密码错误或者账号到期
+                                $("#inte_status_det_result").find("span").html("有可能是账号密码错误，也有可能是宽带到期账号无法使用");
+                            }
+                            else if(s[0].ErrorCode == 678)
+                            {
+                                //运营商服务器升级或者网线松动
+                                $("#inte_status_det_result").find("span").html("有可能是运营商服务器升级，也有可能是网线松动，建议拔掉网线10分钟后重新插入试试看，如果还是不行，请联系宽带运营商");
+                            }
+                            else if(s[0].ErrorCode == 646 || s[0].ErrorCode == 647 || s[0].ErrorCode == 648 || s[0].ErrorCode == 649)
+                            {
+                                //PPPOE账号无法使用，错误代码XXX
+                                $("#inte_status_det_result").find("span").html("您的宽带账号无法使用，错误代码"+s[0].ErrorCode+"，请联系宽带运营商");                                
+                            }
+                            else if(s[0].ErrorCode == 1)
+                            {
+                                //PPPOE正在拨号
+                                $("#inte_status_det_result").find("span").html("正在拨号");                                    
+                            }
+                            else
+                            {
+                                //PPPOE请求发出无响应
+                                $("#inte_status_det_result").find("span").html("PPPoE请求发出后无响应，可能由于宽带运营商线路不稳定，导致路由器PPPoE拨号异常，请联系宽带运营商");    
+                            }
+                        }
+                        else   //WAN口有IP
+                        {
+                            if(s[0].PingWan == 0)  //不能PING通WAN侧网关IP
+                            {
+                                //重启或MAC克隆
+                                $("#inte_status_det_result").find("span").html("1.请重启宽带运营商设备，如依然无法解决，请联系宽带运营商；2.请尝试开启路由器MAC克隆功能，克隆能上网的设备MAC地址");    
+                            }
+                            else  //能PING通WAN侧网关IP
+                            {
+                                if(s[0].DNS == 0)
+                                {
+                                    //DNS地址不存在
+                                    $("#inte_status_det_result").find("span").html("无DNS,请至外网设置页面设置DNS");
+                                }
+                                else if(s[0].DNS == 1)
+                                {
+                                    // DNS地址存在
+                                    $("#inte_status_det_result").find("span").html("1.路由器WAN侧连接的宽带运营商设备无法上网，请重启宽带运营商设备，如依然存在问题，请联系宽带运营商；2.请尝试开启路由器MAC克隆功能，克隆能上网的设备MAC地址");
+                                }
+                                else
+                                {
+                                    // DNS地址自定义
+                                    $("#inte_status_det_result").find("span").html("路由器使用了自定义DNS，可能会影响上网效果，如果已经影响上网，建议取消自定义DNS，如果上网没影响，可以忽略本条建议");        
+                                }
+                            }
+                        }
+                    }
+                    else   //DHCP问题
+                    {
+                        if(s[0].WanIp == 0)  //WAN口无IP
+                        {
+                            //DHCP问题
+                            $("#inte_status_det_result").find("span").html("自动方式（DHCP）无法上网，请确认上联设备是否打开DHCP服务");
+                        }
+                        else   //WAN口有IP
+                        {
+                            if(s[0].PingWan == 0)  //不能PING通WAN侧网关IP
+                            {
+                                //重启或MAC克隆
+                                $("#inte_status_det_result").find("span").html("1.请重启宽带运营商设备，如依然无法解决，请联系宽带运营商；2.请尝试开启路由器MAC克隆功能，克隆能上网的设备MAC地址");
+                            }
+                            else  //能PING通WAN侧网关IP
+                            {
+                                if(s[0].DNS == 0)
+                                {
+                                    //DNS地址不存在
+                                    $("#inte_status_det_result").find("span").html("无DNS,请至外网设置页面设置DNS");
+                                }
+                                else if(s[0].DNS == 1)
+                                {
+                                    // DNS地址存在
+                                    $("#inte_status_det_result").find("span").html("1.路由器WAN侧连接的宽带运营商设备无法上网，请重启宽带运营商设备，如依然存在问题，请联系宽带运营商；2.请尝试开启路由器MAC克隆功能，克隆能上网的设备MAC地址");
+                                }
+                                else
+                                {
+                                    // DNS地址自定义
+                                    $("#inte_status_det_result").find("span").html("路由器使用了自定义DNS，可能会影响上网效果，如果已经影响上网，建议取消自定义DNS，如果上网没影响，可以忽略本条建议");
+                                }
+                            }
+                        }
+                    }
+                    err_num = err_num + 1;
+                    router_frac = router_frac - 15;
+                    $("#score").html(router_frac);
+                    time_stop = setTimeout("fun_sys_error_3()", 2000);
+                }
+            }
+            );    
+}
+
+function fun_sys_error_3()
+{
+    checkNUm = checkNUm + 1;
+    XHR.get('<%=luci.dispatcher.build_url("admin", "index", "gra_WIFICheck")%>',null,
+        function(x,s)
+        {
+            if( !isCheck )
+                return;
+            if(s[0].Link24G == 0)
+            {
+                $("#wifi_status_det").show();
+                $("#wifi_status_det_result_2").show(); //2.4G无线未开启
+                warn_num = warn_num + 1;
+                router_frac = router_frac - 10;
+                $("#score").html(router_frac);
+            }
+            else
+            {
+                //2.4G无线开启
+            }
+            if(s[0].Link5G == 0)
+            {
+                $("#wifi_status_det").show();
+                $("#wifi_status_det_result_5").show();  //5G无线未开启
+                warn_num = warn_num + 1;
+                router_frac = router_frac - 10;
+                $("#score").html(router_frac);
+            }
+            else
+            {
+                //5G无线开启
+            }
+            if(s[0].SignalEnhancement24G == 0)
+            {
+                $("#wifi_status_det").show();
+                $("#wifi_status_det_result_sig").show();   //2.4G信号增强未开启
+                warn_num = warn_num + 1;
+                router_frac = router_frac - 10;
+                $("#score").html(router_frac);
+            }
+            else
+            {
+                //2.4G信号增强开启
+            }
+            if(s[0].Link24G == 1 && s[0].Link5G == 1 && s[0].SignalEnhancement24G == 1)
+            {
+                $("#wifi_status_det").show();
+                $("#wifi_status_det_ok").show();
+            }
+            time_stop = setTimeout("fun_sys_error_4()", 2000);
+        }
+        );    
+}
+
+function fun_sys_error_4()
+{
+    checkNUm = checkNUm + 1;
+    XHR.get('<%=luci.dispatcher.build_url("admin", "index", "gra_WifiPasswordCheck")%>',null,
+        function(x,s)
+        {
+            if( !isCheck )
+                return;
+            if(s[0].GWIFISecurity24G == 1)
+            {
+                $("#wifi_pwd_det").show();
+                $("#wifi_pwd_det_result_2").show();   //2.4G无线密码安全性弱
+                $("#wifi_pwd_det_result_2").find("span").html("2.4G密码：安全性弱");
+                warn_num = warn_num + 1;
+                router_frac = router_frac - 9;
+                $("#score").html(router_frac);
+            }
+            else if(s[0].GWIFISecurity24G == 2)
+            {
+                $("#wifi_pwd_det").show();
+                $("#wifi_pwd_det_result_2").show();   //2.4G无线密码安全性中
+                $("#wifi_pwd_det_result_2").find("span").html("2.4G密码：安全性中");
+                warn_num = warn_num + 1;
+                router_frac = router_frac - 5;
+                $("#score").html(router_frac);
+            }
+            else
+            {
+                //2.4G无线密码安全性强
+            }
+            if(s[0].GWIFISecurity5G == 1)
+            {
+                $("#wifi_pwd_det").show();
+                $("#wifi_pwd_det_result_5").show();   //5G无线密码安全性弱
+                $("#wifi_pwd_det_result_5").find("span").html("5G密码：安全性弱");
+                warn_num = warn_num + 1;
+                router_frac = router_frac - 9;
+                $("#score").html(router_frac);
+            }
+            else if(s[0].GWIFISecurity5G == 2)
+            {
+                $("#wifi_pwd_det").show();
+                $("#wifi_pwd_det_result_5").show();   //5G无线密码安全性中
+                $("#wifi_pwd_det_result_5").find("span").html("5G密码：安全性中");
+                warn_num = warn_num + 1;
+                router_frac = router_frac - 5;
+                $("#score").html(router_frac);
+            }
+            else
+            {
+                //5G无线密码安全性强    
+            }
+            if(s[0].GWIFISecurity24G == 3 && s[0].GWIFISecurity5G == 3)
+            {
+                $("#wifi_pwd_det").show();
+                $("#wifi_pwd_det_ok").show();
+            }
+            time_stop = setTimeout("fun_sys_error_5()", 2000);
+        }
+        );    
+}
+
+function fun_sys_error_5()
+{
+    checkNUm = checkNUm + 1;
+    XHR.get('<%=luci.dispatcher.build_url("admin", "index", "gra_RouterPasswordCheck")%>',null,
+        function(x,s)
+        {
+            if( !isCheck )
+                return;
+            if(s[0].RouterSecurity == 1)
+            {
+                $("#router_pwd_det").show();
+                $("#router_pwd_det_result").show();   //登录密码安全性弱
+                $("#router_pwd_det_result").find("span").html("路由器密码：安全性弱");
+                warn_num = warn_num + 1;
+                router_frac = router_frac - 9;
+                $("#score").html(router_frac);
+                time_stop = setTimeout("fun_sys_error_6()", 2000);
+            }
+            else if(s[0].RouterSecurity == 2)
+            {
+                $("#router_pwd_det").show();
+                $("#router_pwd_det_result").show();   //登录密码安全性中
+                $("#router_pwd_det_result").find("span").html("路由器密码：安全性中");
+                warn_num = warn_num + 1;
+                router_frac = router_frac - 5;
+                $("#score").html(router_frac);
+                time_stop = setTimeout("fun_sys_error_6()", 2000);
+            }
+            else
+            {
+                //登录密码安全性强
+                $("#router_pwd_det").show();
+                $("#router_pwd_det_ok").show();
+                time_stop = setTimeout("fun_sys_error_6()", 2000);
+            }
+        }
+        );    
+}
+
+function fun_sys_error_6()
+{
+    checkNUm = checkNUm + 1;
+    XHR.get('<%=luci.dispatcher.build_url("admin", "index", "gra_checkversion")%>',null,
+        function(x,s){
+            if( !isCheck )
+                return;
+
+            if(s[0].retstate == 1)
+            {
+                if(s[0].VerNum == 1)
+                {
+                    $("#firmware_ver_det").show();   //有新版本
+                    $("#firmware_ver_det_result").show();   
+                    warn_num = warn_num + 1;
+                    router_frac = router_frac - 10;
+                    $("#score").html(router_frac);
+                    newVersion = s[0].version;        //最新软件版本
+                    swPt = s[0].pubtime;             //发布日期
+                    if(s[0].versiondesc)
+                        sw_verdesc = s[0].versiondesc;
+                }
+                else
+                {
+                    $("#firmware_ver_det").show();   //没有新版本
+                    $("#firmware_ver_det_ok").show();
+                }
+            }
+            else
+            {
+                $("#firmware_ver_det").show();   //没有新版本
+                $("#firmware_ver_det_ok").show();
+            }
+
+            $("#onekeycheck_button").show();
+            $("#onekeycheck_button").html("重新体检");
+            if(err_num == 0 && warn_num == 0)
+            {
+                $("#title2span").html("系统安全，请放心使用");
+                $("#check_loading").html("");
+                $("#score").css("background",'url("<%=media%>/images/oncheckloadend.png") no-repeat')
+                clearTimeout(load_timer);
+            }
+            else
+            {    $("#title2span").attr("style","font-size:12px;color:#999999");
+                $("#title2span").html("发现<span style='color:#00bdff;'>"+err_num+"</span>个故障，<span style='color:#00bdff;'>"+warn_num+"</span>个提醒，建议立即修复");
+                $("#check_loading").html("");
+                $("#score").css("background",'url("<%=media%>/images/oncheckloadend.png") no-repeat')
+                clearTimeout(load_timer);
+            }
+            currentVersion = s[0].CurNum;    //当前软件版本
+
+        }
+        );    
+}
+    $(function(){
+        $(".cbi_wan_check ").click(function(){
+      $("#wan_check_modal").find(".loading_msg_span").html("<%:qckgd_auodetecting_des%>");
+            $("#wan_check_modal").modal("show");
+        });
+    })
+</script>

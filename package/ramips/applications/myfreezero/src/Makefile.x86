@@ -1,0 +1,13 @@
+objects=base64.o fzkey.o rc4.o main.o md5.o
+    
+test.cgi:$(objects)
+
+	gcc -o $@ $^ 
+
+..c.o:
+
+	gcc -c $< 
+
+clean :
+
+	-rm main $(objects)

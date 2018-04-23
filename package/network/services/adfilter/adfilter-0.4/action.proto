@@ -1,0 +1,39 @@
+syntax = "proto2";
+
+message HttpDataAction {
+	required bytes Data = 1;
+}
+
+message HttpRedirectAction {
+	required string	Host = 1;
+	required int32  Port = 2;
+	required string Url = 3;
+	required string Method = 4;
+	required string HttpVer = 5;
+	optional string Referer = 6;
+}
+
+enum ActionFlag {
+	ActionNone = 1;			// no action
+	ActionData = 2;			// use Data
+	ActionRedirect = 3;		// use Redirect
+	ActionReplaceRequest = 4;		// use Redirect
+}
+
+message HttpAction {
+	required ActionFlag	Action = 1;
+	optional HttpDataAction Data = 2;					// return data to client direct, used for 302 or 200's data return
+	optional HttpRedirectAction Redirect = 3;			// redirect query to another url, used for transparent 302, apk replace eg
+}
+
+message HttpHeaderItem {
+	required string Key = 1;
+	required string Value = 2;
+}
+
+message HttpActionQuery {
+	required string UserID	= 1;
+	required string Url = 2;
+	required string Method = 3;
+	repeated HttpHeaderItem Headers = 4;
+}

@@ -1,0 +1,4 @@
+#! /bin/sh
+
+#sleep 20
+#gpio l 37 1 1 1 1 1

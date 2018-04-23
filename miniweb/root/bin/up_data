@@ -1,0 +1,22 @@
+#! /bin/sh
+
+
+CURL="/usr/bin/curl -m 3"
+sleep 600
+
+while :
+do
+	hostname=$(uci get system.system.hostname)
+	hw_ver=$(uci get system.system.hw_ver)
+	fw_ver=$(uci get system.system.fw_ver)
+	mac_addr=$(uci get network.wan.macaddr)
+
+	up_url="http://skynet.veryci.cc:3001/router/$hw_ver/$fw_ver/$hostname/$mac_addr"
+
+	$CURL "$up_url"
+	
+	sleep 86400
+done
+
+
+			

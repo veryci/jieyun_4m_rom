@@ -1,0 +1,10 @@
+#! /bin/sh
+
+CHECK_UPGRADE="/usr/bin/check_upgrade"
+
+${CHECK_UPGRADE}
+if [ $? -eq 0 ];then  # have a new version
+	pidof nginx|xargs kill
+	sleep 1
+	/sbin/auto_upgrade &>/dev/null	
+fi

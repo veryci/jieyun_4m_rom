@@ -1,0 +1,22 @@
+<%# Jie Yun-%>
+<%
+	require "luci.netmac"
+	local disp = require "luci.dispatcher"	
+	local request = disp.context.request
+%>
+<% if #request > 0 and request[2] ~= "index" and request[2] ~= "networkset" and request[2] ~= "wifiset" and request[2] ~= "device_manage" then %>
+			</div> <!-- end col  9 -->
+		</div>  
+	</div><!-- end col 10 -->
+	<div class="col-md-1 col-xs-1">		
+	</div>
+</div>
+<% else%>
+
+<%end%>
+	<div class="footer_div">
+		<span>软件版本号：<%=pcdata(luci.veryci.softversion)%></span>
+		<span>MAC地址：<%=get_wan_mac()%></span>
+	</div>
+</body>
+</html>

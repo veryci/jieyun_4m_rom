@@ -1,0 +1,128 @@
+<%-
+local disp = require "luci.dispatcher"
+local request  = disp.context.path
+local function get1_stle(lival, lel) 
+	local distyle = ' ';
+	if lel == 2 then
+		if lival == request[2] then 
+			distyle = 'border-left:3px solid #00bdff;color:#00bdff;background:#F8F8F8'
+		end
+	end
+	if lel == 3 then
+		if lival == request[3] then 
+			distyle = 'color:#00bdff;border:1px solid #EEEEEE;'
+		end
+	end
+	return distyle
+end
+
+-%>
+<div class="row list_row_div">
+	<div class="col-md-1 col-xs-1" ></div>
+        <div class="col-md-10 col-xs-10 list_col-md-10">
+            <div class="list_body_div">
+                <div class="col-md-3 col-xs-3 list_body_col-md-3 content">
+                    <ul class="nav " id="list1">
+
+<!--list start -->
+<li>
+	<a class="list_li1_a" href="<%=luci.dispatcher.build_url("admin", "more_sysstatus")%>" id="more_sysstatus" style='<%=get1_stle("more_sysstatus", 2)%>'>
+		<div><span class="icon-systemstate iconSpan"></span><span class="textSpan">系统状态</span></div>
+	</a>
+</li>
+<li>
+	<a class="up_down_a list_li1_a" href="#lanSetdhcpServer" data-toggle="collapse" style='<%=get1_stle("more_wanset", 2)%>'>
+		<div><span class="icon-intranetset iconSpan"></span><span class="textSpan">内网设置</span><span  class=' icon-<%= request[2]== "more_wanset" and "uparrow" or "downarrow"%> up_down'  value='<%= request[2]== "more_wanset" and 1 or 0%>'></span></div>
+	</a>
+    <ul id="lanSetdhcpServer" class='nav nav-list collapse menu-second list_ul <%=request[2]== "more_wanset" and [[in \' aria-expanded="true"]] or [[\']] %>>
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin", "more_wanset","lanset")%>" id="lanset" style='<%=get1_stle("lanset", 3)%>'>
+			<div><span class="icon-lanset iconSpan2"></span><span class="textSpan2">LAN口设置</span></div></a>
+		</li>
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin", "more_wanset","dhcp")%>" id="dhcp" style='<%=get1_stle("dhcp", 3)%>'>
+			<div><span class="icon-dhcp iconSpan2"></span><span class="textSpan2">DHCP设置</span></div></a>
+		</li>
+    </ul>
+</li>
+<!-- delete it   
+<li>
+	<a class="list_li1_a" href="<%=luci.dispatcher.build_url("admin", "more_signal")%>" id="more_signal" style='<%=get1_stle("more_signal", 2)%>'>
+	<div><span class="icon-more_signal iconSpan"></span><span class="textSpan">信号调节</span></div></a>
+</li>
+-->
+<li>
+	<a class="list_li1_a" href="<%=luci.dispatcher.build_url("admin", "more_wlextend")%>" id="more_wlextend" style='<%=get1_stle("more_wlextend", 2)%>'>
+	<div><span class="icon-more_wlextend iconSpan"></span> <span class="textSpan">无线扩展</span></div></a>
+</li>
+<li>
+	<a class="list_li1_a" href="<%=luci.dispatcher.build_url("admin", "more_wps")%>" id="more_wps" style='<%=get1_stle("more_wps", 2)%>'>
+	<div><span class="icon-more_wps iconSpan"></span> <span class="textSpan">WPS设置</span></div></a>
+</li>
+<li>
+	<a class="list_li1_a" href="<%=luci.dispatcher.build_url("admin", "more_parentctl")%>" id="more_parentctl" style='<%=get1_stle("more_parentctl", 2)%>'>
+	<div><span class="icon-more_parentctl iconSpan"></span> <span class="textSpan">家长控制</span></div></a>
+</li>
+<li>
+	<a class="list_li1_a" href="<%=luci.dispatcher.build_url("admin", "more_safeset")%>" id="more_safeset" style='<%=get1_stle("more_safeset", 2)%>'>
+	<div><span class="icon-more_safeset iconSpan"></span> <span class="textSpan">安全设置</span></div></a>
+</li>
+<li>
+	<a class="list_li1_a" href="<%=luci.dispatcher.build_url("admin", "more_remotemgt")%>" id="more_remotemgt" style='<%=get1_stle("more_remotemgt", 2)%>'>
+	<div><span class="icon-more_remotemgt iconSpan"></span> <span class="textSpan">远程管理</span></div></a>
+</li>
+<li>
+	<a class="list_li1_a" href="<%=luci.dispatcher.build_url("admin", "more_ddns")%>" id="more_ddns" style='<%=get1_stle("more_ddns", 2)%>'>
+	<div><span class="icon-more_ddns iconSpan"></span> <span class="textSpan">动态DNS</span></div></a>
+</li>
+<li>
+	<a class="up_down_a list_li1_a" href="#forwardSet" data-toggle="collapse" style='<%=get1_stle("more_forward", 2)%>'>
+	<div><span class="icon-forwardset iconSpan"></span> <span class="textSpan">转发设置</span><span class=' icon-<%= request[2]== "more_forward" and "uparrow" or "downarrow"%> up_down'  value='<%= request[2]== "more_forward" and 1 or 0%>'></span></div>
+	</a>
+    <ul id="forwardSet" class='nav nav-list collapse menu-second list_ul <%=request[2]== "more_forward" and [[in \' aria-expanded="true"]] or [[ \']]%> >
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin","more_forward","appportfwdset")%>" id="appportfwdset" style='<%=get1_stle("appportfwdset", 3)%>'>
+		<div><span class="icon-appportfwdset iconSpan2"></span><span class="textSpan2">端口转发</span></div></a>
+		</li>
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin", "more_forward", "DMZset")%>" id="DMZset" style='<%=get1_stle("DMZset",3)%>'>
+			<div><span class="icon-DMZset iconSpan2"></span><span class="textSpan2">DMZ主机</span></div></a>
+		</li>
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin","more_forward","UPnPset")%>" id="UPnPset" style='<%=get1_stle("UPnPset", 3)%>'>
+			<div><span class="icon-UPnPset iconSpan2"></span><span class="textSpan2">UPnP设置</span></div></a>
+		</li>
+	</ul>
+</li>
+<li>
+	<a class="up_down_a list_li1_a" href="#systemSet"  data-toggle="collapse" style='<%=get1_stle("more_sysset", 2)%>'>
+	<div><span class="icon-systemset iconSpan"></span><span class="textSpan">系统设置</span><span class='icon-<%= request[2]== "more_sysset" and "uparrow" or "downarrow"%> up_down' value='<%= request[2]== "more_sysset" and 1 or 0%>'></span></div></a>
+    <ul id="systemSet" class='nav nav-list collapse menu-second list_ul <%=request[2]== "more_sysset" and [[ in \' aria-expanded="true"]] or [[\']]%> >
+<!--
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin","more_sysset","indicatorlight")%>" id="indicatorlight" style='<%=get1_stle("indicatorlight", 3)%>'>
+			<div><span class="icon-indicatorlight iconSpan2"></span><span class="textSpan2">指示灯</span></div></a>
+		</li>
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin","more_sysset","APPset")%>" id="APPset" style='<%=get1_stle("APPset", 3)%>'>
+			<div><span class="icon-APPset iconSpan2"></span><span class="textSpan2">应用设置</span></div></a>
+		</li>
+-->
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin","more_sysset","autoupgrade")%>" id="autoupgrade" style='<%=get1_stle("autoupgrade", 3)%>'>
+			<div><span class="icon-autoupgrade iconSpan2"></span><span class="textSpan2">自动升级</span></div></a>
+		</li>
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin","more_sysset","manualupgrade")%>" id="manualupgrade" style='<%=get1_stle("manualupgrade", 3)%>'>
+			<div><span class="icon-manualupgrade iconSpan2"></span><span class="textSpan2">手动升级</span></div></a>
+		</li>
+<!--
+		<li style="border: 1px solid #E8E8E8"><a class="list_li2_a" href="<%=luci.dispatcher.build_url("admin","more_sysset","backuprecovery")%>" id="backuprecovery" style='<%=get1_stle("backuprecovery", 3)%>'>
+			<div><span class="icon-backuprecovery iconSpan2"></span><span class="textSpan2">备份恢复</span></div></a>
+		</li>
+-->
+    </ul>
+</li>
+<!--list end -->
+
+
+                        <script type="text/javascript">
+                        <% if request[3]=="UPnPset" or request[2]=="more_sysset" then%>
+          						$(".col-md-3").scrollTop($(".col-md-3").height());
+          				<%end%>
+                    </script>
+                    </ul>
+                </div>
+
+           		<div class="col-md-9 col-xs-9 advance_right_center content">

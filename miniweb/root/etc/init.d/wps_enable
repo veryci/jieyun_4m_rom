@@ -1,0 +1,16 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006 OpenWrt.org
+
+START=102
+WPS_GPIO=38
+WPS_CONFIG="/etc/config/wps_config"
+
+start() {
+	/bin/wps_led &
+	gpio m ${WPS_GPIO} 1
+	WPS_ENABLE=$(awk '/wps_enable/{print $NF}' ${WPS_CONFIG}|sed "s/'//g")
+	if [ ${WPS_ENABLE} -eq 1 ];then
+		/usr/bin/btnd wps ${WPS_GPIO} &
+	fi
+		
+}

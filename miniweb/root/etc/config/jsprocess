@@ -1,0 +1,4 @@
+
+config jsprocess 'config'
+	option ignore 0
+

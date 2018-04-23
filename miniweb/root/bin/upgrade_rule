@@ -1,0 +1,34 @@
+#!/bin/sh
+
+UP_TIME=$(uci get system.autoupgrade.up_time)
+UP_TYPE=$(uci get system.autoupgrade.up_type)
+
+
+if [ $UP_TYPE = "1" ];then
+	RANDOM_H=$(($(date +%s)%3))
+	let "RANDOM_H+=1"
+	RANDOM_M=$(($(date +%s)%59))
+
+	if [ -z "$RANDOM_H" ];then
+		RANDOM_H=2
+	fi
+
+	if [ -z "$RANDOM_M" ];then
+		RANDOM_M=0
+	fi
+	RULE="${RANDOM_M} ${RANDOM_H} * * * /sbin/upgrade & &>/dev/null"
+else
+	UP_TIME_H=$(echo $UP_TIME|awk -F':' '{print $1}')
+	UP_TIME_M=$(echo $UP_TIME|awk -F':' '{print $2}')
+	if [ -z "$UP_TIME_H" ];then
+		UP_TIME_H=2
+	fi
+
+	if [ -z "$UP_TIME_M" ];then
+		UP_TIME_M=0
+	fi
+	RULE="${UP_TIME_M} ${UP_TIME_H} * * * /sbin/upgrade & &>/dev/null"
+fi
+	
+echo "$RULE" >/etc/crontabs/root
+

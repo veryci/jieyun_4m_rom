@@ -1,0 +1,59 @@
+<%+header%>
+<%
+	local uci = require("luci.model.uci").cursor()
+%>
+<script>
+	var switch_flag;
+	function initSwitch(){
+		var val_button = "<%=uci:get("jsprocess", "config", "ignore")%>";	
+		if(val_button == "1"){
+			$("#img_val").val("1");
+		} else {
+			$("#img_val").val("0");
+		}
+		switch_flag = 0;		
+	}
+
+	$(function(){
+		initSwitch();
+		$("#change_switch").click(function(){
+			var str_img = $("#change_switch").attr("src");
+			if(switch_flag == 0){					
+				if(str_img == "<%=media%>/images/switch_off.png"){
+					$("#change_switch").attr("src","<%=media%>/images/switch_on.png");
+					$("#img_val").val("0");
+				}else{
+					$("#change_switch").attr("src","<%=media%>/images/switch_off.png");
+					$("#img_val").val("1");
+				}
+				$("form[name='APPset']").submit();	
+				switch_flag = 1;				
+			}
+		});	
+
+	});
+</script>
+            <div class="setcontent advanced" id="appset">
+                <div class="title-span"><span >应用设置</span></div>
+                <div class="title-underline"></div>
+                <div class="setlinediv margintop-30">
+                    <span class="link-span"><%:price compare function:%></span>
+                    <span class="switchspan">
+                    <%if uci:get("jsprocess", "config", "ignore")=="1" then%>
+                        <img id="change_switch" src="<%=media%>/images/switch_off.png"/>
+                    <%else%>
+                    	<img id="change_switch" src="<%=media%>/images/switch_on.png"/>
+                    <%end%>
+                    </span>	
+                </div>
+                <form name="APPset" id="APPset" action="<%=REQUEST_URL%>" method="POST">
+                    <input type="hidden" name="button_change" id="img_val" value="0">
+                </form>					
+                <div class="setlinediv">
+                    <span class="explain-span1">
+                    <%:annotation%><p>
+                    <%:open this, you can compare goods prices among online stores%><%:help you to get cheaper one%>	
+                    </p></span>
+                </div>
+            </div>
+<%+footer%>

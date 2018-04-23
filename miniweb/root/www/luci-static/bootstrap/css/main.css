@@ -1,0 +1,18 @@
+input {
+  border: 1px solid #979797;
+  outline: none;
+  font-size: 16px;
+  padding: 0;
+  height: 36px;
+  padding: 0 5px;
+}
+
+button {
+  border-radius: 3px;
+  border: none;
+  font-size: 18px;
+  background: #f59123;
+  margin: 0 auto;
+  cursor: pointer;
+  color: #fff;
+}

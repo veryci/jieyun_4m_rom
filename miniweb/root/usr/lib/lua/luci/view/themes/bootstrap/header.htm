@@ -1,0 +1,612 @@
+<%#
+DISCREPTION   : LuCI - Lua Configuration Interface - common header
+CREATED DATE  : 2016-04-26
+MODIFIED DATE : 
+-%>
+<%
+local uci_t = luci.model.uci.cursor()
+local sys  = require "luci.sys"
+local http = require "luci.http"
+local disp = require "luci.dispatcher"
+local hostname = sys.hostname()
+local request  = disp.context.path
+local request2 = disp.context.request
+local category = request[1]
+--local thirdnode = request[3]
+--local cattree  = category and disp.node(category)
+--local leaf = request2[#request2]
+local tree = disp.node()
+local node = disp.context.dispatched
+--local categories = disp.node_childs(tree)
+local c = tree
+local i, r
+
+local timerebootstatus = uci_t:get("timereboot","timereboot","enable")
+local timereboottime = uci_t:get("timereboot", "timereboot", "time")
+local timereboothour = nil
+local timerebootmin = nil
+if not timereboottime then
+        timereboottime = "00:00"
+end
+timereboothour = string.sub(timereboottime,1,2)
+timerebootmin = string.sub(timereboottime,4,5)
+
+-- tag all nodes leading to this page
+for i, r in ipairs(request) do
+	if c.nodes and c.nodes[r] then
+		c = c.nodes[r]
+		c._menu_selected = true
+	end
+end
+
+-- send as HTML5
+http.prepare_content("text/html")
+
+local function nodeurl(prefix, name, query)
+	local url = controller .. prefix .. name .. "/"
+	if query then
+		url = url .. http.build_querystring(query)
+	end
+	return pcdata(url)
+end
+
+-%>
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, minimum-scale=0.3, maximum-scale=1, user-scalable=yes" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no"/>  
+    <%+title%> 
+    <link rel="stylesheet" href="<%=media%>/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<%=media%>/css/style.css">
+    <link rel="stylesheet" href="<%=media%>/css/cbi.css">
+    <link rel="stylesheet" href="<%=media%>/css/advanced.css">
+    <link rel="stylesheet" href="<%=media%>/css/index_style.css">
+    <link rel="stylesheet" href="<%=media%>/css/icon_fonts_style.css">
+    <script type="text/javascript" src="<%=media%>/js/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript" src="<%=media%>/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="<%=media%>/js/function.js"></script>
+    <script type="text/javascript" src="<%=media%>/js/base64Encode.js"></script>
+    <script type="text/javascript" src="<%=media%>/js/jquery.nicescroll.min.js"></script>
+    <script type="text/javascript" src="<%=resource%>/xhr.js"></script>
+    <script type="text/javascript" src="<%=resource%>/cbi.js"></script>
+  
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+  <script src="<%=media%>/js/html5shiv.js"></script>
+  <script src="<%=media%>/js/respond.min.js"></script>
+      <style type="text/css">
+        .bg{
+        background: #F5F5F5;
+      }
+    </style>
+  <![endif]-->
+
+  <% include("themes/" .. theme .. "/multlangjs") %>
+  <% include("themes/" .. theme .. "/headerscript") %>
+</head>
+
+<body class="content_body bg"  oncontextmenu=self.event.returnValue=false >
+<div class="modal fade" id="wan_check_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-content loading_modal_div" role="document">
+            <img src="<%=media%>/images/load.gif" class="loading_img"/>
+            <span class="loading_msg_span">生效中...</span>
+        </div>
+</div>
+
+    <div class="modal fade" id="myAlert" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="alert_dialog" role="document">
+            <div class="modal-content alert_content">
+                <span id="alert_msg"></span>
+                <button id="confirm_bt" type="button" >确定</button>
+                <button id="cancel_bt" type="button" data-dismiss="modal" style="background: #666666;margin-left:20px;display: none; ">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <button style="display:none" data-toggle="modal" data-target="#promptModal" id="prompt_button">升级提示
+    </button>
+    <div class="modal fade" id="promptModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" >
+        <div class="progress_modal_dialog" role="document">
+            <div class="modal-content modal_content modal_header_border" style="" >
+                <div class="icon_close_div">
+                    <a href="#" data-dismiss="modal" class="onecheck_close close">
+                        <span class="icon-break icon_close_pan">
+                        </span>
+                    </a>    
+                </div>
+                <div class="modal-header modal_header_border">
+                    <div class="modal_title_div" style="">
+                        <span>升级提示</span>    
+                    </div>
+                </div>
+                <hr>
+                <div>
+                    <div class="software_upgrade_modal_body_div">
+                        <span ><%=prompt%></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--progress_bar  -->
+    <button style="display: none;" data-toggle="modal" data-target="#progress_barModal" id="progress_bar_buttom">进度条</button>
+    <div class="modal fade" id="progress_barModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" >
+        <div class="progress_modal_dialog" role="document">
+            <div class="modal-content modal_content">
+                <button type="button" id="close_progress_button" class="close" data-dismiss="modal" style="opacity: 0;">
+                </button>
+                <div class="progress_modal_content_title">
+                    <% if reset_process then %>
+                    <span id="progress_content_up">恢复出厂中...</span>
+                    <% elseif upgrading then %>
+                    <span id="progress_content_up">固件升级中...</span>
+                    <% else %>
+                    <span id="progress_content_up">设备重启中...</span>
+                    <% end %>
+                    <div class="progress_div">
+                        <div class="progress_bar_div" id="progress_bar" w="476" style="width:0px;">
+                            <div class="progress_bar_circle_div"></div>
+                        </div>
+                    </div>
+                    <div class="progress_msg_div">
+                        <% if upgrading then %>
+                        <span id="progress_content_down">路由器固件升级中，请勿切断电源！</span>
+                        <% else %>
+                        <span id="progress_content_down">路由器重启中，请勿切断电源！</span>
+                        <% end %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" name="frm_OneKey" action="<%=luci.dispatcher.build_url("admin", "index", "gra_onekeyupgrade")%>" enctype="multipart/form-data" target="">
+        <input type="hidden" name="onekeyupgrade" value="1">
+    </form>
+    <!-- soft update -->
+    <button style="display:none" data-toggle="modal" data-target="#upgradeModal" id="upgrade_button">软件升级</button>
+    <div class="modal fade" id="upgradeModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" >
+        <div class="progress_modal_dialog" role="document" style="margin-top:100px;">
+            <div class=" software_upgrade_modal_content">
+                <div class="modal-header modal_header_border">
+                    <div class="modal_title_div" style="margin-top:25px;">
+                        <span>软件升级</span>    
+                    </div>
+                </div>
+                <hr style="opacity:.5;filter:alpha(opacity=50)">
+                <div class="update_sw_msg_div">
+                    <div class="cur_sw">
+                    <span>当前版本：</span><span id="sw_alert1"></span>
+                    </div>
+                    <div class="new_sw">
+                    <span>最新版本：</span><span id="sw_alert2"></span>
+                    </div>
+                    <div class="release_time">
+                    <span>发布时间：</span><span id="sw_alert3"></span>
+                    </div>
+                </div>
+                 <div class="update_sw_content_div">
+                        <span class="update_content_title">更新内容</span>
+                        <span id="sw_alert4"></span>
+                </div>
+                <div class="button_div">
+                    <div class="btn confirm_button" id="savebackup">
+                        <span class="button_span">确认</span>
+                    </div>
+                    <div class="btn  cancel_button" id="cancelbackup" data-dismiss="modal"><span class="button_span">取消</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <%
+    local disp = require "luci.dispatcher"    
+    local request = disp.context.request
+    %>
+    <!-- header -->
+    <nav class=" header_div navbar navbar-fixed-top">
+        <div class="container-fluid">
+            <div class="navbar-header header_left">
+                <div  class="navbar-brand head_logo" >
+                    <img style="" src="<%=media%>/images/logo.png" >
+                </div> 
+                <div class="header_min_button_div">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+
+                </div> 
+            </div>
+            <div class="header_right">
+                <div class=" collapse navbar-collapse" id="bs-example-navbar-collapse-1" style="">
+                    <div class="nav header_center_div">
+                        <ul class="nav navbar-nav">
+                            <li>
+                                <a class="header_a" id="index"  href="<%=luci.dispatcher.build_url("admin", "index")%>" <%if request[2] =="index" then%> style="background:#12a8e9;color:#ffffff" <%end%>>
+                                    <div>
+                                        <span class="icon-homepage header_icon"></span>
+                                        <span class="header_text_span">首页</span>
+                                    </div>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="header_a" id="networkset" href="<%=luci.dispatcher.build_url("admin", "networkset")%>" <% if request[2] =="networkset" then%> style="background:#12a8e9;color:#ffffff" <%end%>>
+                                    <div>
+                                        <span class="icon-networkset header_icon"></span>
+                                        <span class="header_text_span">上网设置</span>
+                                    </div>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="header_a" id="wifiset" href="<%=luci.dispatcher.build_url("admin", "wifiset")%>" <% if request[2] =="wifiset" then%> style="background:#12a8e9;color:#ffffff" <%end%>>
+                                    <div>
+                                        <span class="icon-wifiset header_icon"></span>
+                                        <span class="header_text_span">无线设置</span>
+                                    </div>
+                                </a>
+                            </li>
+			    <!-- delete it
+                            <li>
+                                <a class="header_a" id="device_manage" href="<%=luci.dispatcher.build_url("admin","device_manage")%>" <% if request[2] =="device_manage" then%> style="background:#12a8e9;color:#ffffff" <%end%>>
+                                    <div>
+                                        <span class="icon-device_manage header_icon"></span>
+                                        <span class="header_text_span">终端管理</span>
+                                    </div>
+                                </a>
+                            </li>
+		            -->
+                            <li>
+                                <a class="header_a" id="more_set" href="<%=luci.dispatcher.build_url("admin","more_sysstatus")%>" <% if request[2] ~="device_manage" and request[2] ~="wifiset" and request[2] ~="networkset" and request[2] ~="index" then%> style="background:#12a8e9;color:#ffffff" <%end%>>
+                                    <div>
+                                        <span class="icon-advancedset header_icon"></span>
+                                        <span class="header_text_span">高级设置</span>
+                                    </div>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="header_a" id="freezero" href="<%=luci.dispatcher.build_url("admin","freezero")%>" <% if request[2] =="freezero" then%> style="background:#12a8e9;color:#ffffff" <%end%>>
+                                    <div>
+                                        <span class="icon-device_manage header_icon"></span>
+                                        <span class="header_text_span">激活补贴购</span>
+                                    </div>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="nav header_right_div">
+                        <ul class="nav navbar-nav navbar-right ">
+                            <!-- <li class="header_left_li">
+                                <div title="一键体检" href="#" id="onekeycheck"  data-toggle="modal" data-target="#onekeyCheckModal" style="cursor:pointer">
+                                    <span class="icon-physicalexamination header_other_icon" >
+                                    </span>
+                                </div>
+                            </li> -->
+                            <li class="dropdown header_left_li">
+                                <div title="重启" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" style="cursor:pointer">
+                                    <span class="icon-restart header_other_icon" >
+                                    </span>
+                                </div>
+                                <ul id="reboot_ul"  class="dropdown-menu">
+                                    <li>
+                                        <a href="#" id="restart" data-toggle="modal">立即重启路由器</a>
+                                    </li>
+                                    <li>
+                                        <a href="#" id="timeRboot" data-toggle="modal" data-target="#timeRestartModal">定时重启路由器</a>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="dropdown header_left_li" >
+                                <div title="管理员设置" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" style="cursor:pointer">
+                                    <span class="icon-signin header_other_icon">
+                                    </span>
+                                </div>
+                                <ul id="user_ul" class="dropdown-menu" aria-labelledby="userset">
+                                    <li>
+                                        <a href="#" id="change_pwd" data-toggle="modal" data-target="#changePwdModal">修改管理员密码</a>
+                                    </li>
+                                    <li>
+                                        <a href="<%=luci.dispatcher.build_url("admin", "logout")%>">退出</a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="modal fade onekeycheck_div" id="timeRestartModal" tabindex="-1" role="dialog" aria-labelledby="changePwdModalLabel">
+        <form method="post" name="from_time_reboot" action="<%=luci.dispatcher.build_url("admin", "timereboot")%>" enctype="multipart/form-data" target="">
+            <div class="modal-dialog changePwd_dialog" role="document">
+                <div class="modal-content changePwd_content" >
+                    <div class="modal-header modal_header_border">
+                        <div class="icon_close_div">
+                            <a href="#" data-dismiss="modal" class="close">
+                                <span class="icon-break icon_close_pan"   style=""></span>
+                            </a>
+                        </div>
+                        <div class="modal_title_div" style="">
+                            <span>定时重启路由器</span>    
+                        </div>
+                    </div>
+                    <hr style="margin-bottom: 5px;">
+                    <div class="modal-body">
+                        <div style="margin-top:10px;height: 45px;line-height: 43px;">
+                            <span class="link_span" style="width: 210px;">定时重启：</span>
+                            <img id="timeRebootEnable" class="img_change" <% if timerebootstatus == "on" then %> src="<%=media%>/images/switch_on.png" value="1" <% else %> value="0" src="<%=media%>/images/switch_off.png"<% end %> style="margin-top: 5px;float: left;margin-left: 10px;">
+                        </div>      
+                        <div id="timeRebootDiv" style="height: 45px;line-height: 43px;opacity: 0;filter: alpha(opacity=0);">
+                            <span class="link_span" style="width: 210px;">指定重启时间：</span>
+                            <div class="dropdown dropdown_div" style="float:left;margin-left:10px;width: 65px;">
+                                <div class="dropdown_button" onclick="dropdown_click(this)" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">                     
+                                    <input type="text" id="timereboothour" class="drop_input" readonly="readonly" onfocus="this.blur();" unselectable="on" value="<%=timereboothour%>" style="width: 65px;">
+                                    <span class="icon-downarrow"></span>
+                                </div>
+                                <ul class="dropdown-menu timeRebootUl" aria-labelledby="dLabel" style="min-width:65px;height: 104px;overflow-x:hidden">
+                                    <li id="0"><a value="00">00</a></li>
+                                    <li id="1"><a value="01">01</a></li>
+                                    <li id="2"><a value="02">02</a></li>
+                                    <li id="3"><a value="03">03</a></li>
+                                    <li id="4"><a value="04">04</a></li>
+                                    <li id="5"><a value="05">05</a></li>
+                                    <li id="6"><a value="06">06</a></li>
+                                    <li id="7"><a value="07">07</a></li>
+                                    <li id="8"><a value="08">08</a></li>
+                                    <li id="9"><a value="09">09</a></li>
+                                    <li id="10"><a value="10">10</a></li>
+                                    <li id="11"><a value="11">11</a></li>
+                                    <li id="12"><a value="12">12</a></li>
+                                    <li id="13"><a value="13">13</a></li>
+                                    <li id="14"><a value="14">14</a></li>
+                                    <li id="15"><a value="15">15</a></li>
+                                    <li id="16"><a value="16">16</a></li>
+                                    <li id="17"><a value="17">17</a></li>
+                                    <li id="18"><a value="18">18</a></li>
+                                    <li id="19"><a value="19">19</a></li>
+                                    <li id="20"><a value="20">20</a></li>
+                                    <li id="21"><a value="21">21</a></li>
+                                    <li id="22"><a value="22">22</a></li>
+                                    <li id="23"><a value="23">23</a></li>
+                                </ul> 
+                            </div>
+                            <span style="line-height: 31px;float: left;width: 15px;text-align: right;">:</span>
+                            <div class="dropdown dropdown_div" style="float:left;width: 65px;">
+                                <div class="dropdown_button" onclick="dropdown_click(this)" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="">             
+                                    <input type="text" class="drop_input" id="timerebootmin" readonly="readonly" onfocus="this.blur();" unselectable="on" value="<%=timerebootmin%>" style="width:65px;">
+                                    <span class="icon-downarrow"></span>
+                                </div>
+                                <ul class="dropdown-menu timeRebootUl" aria-labelledby="dLabel" style="min-width:65px;height: 104px;overflow-x:hidden">
+                                    <li id="0"><a value="00">00</a></li>
+                                    <li id="1"><a value="05">05</a></li>
+                                    <li id="2"><a value="10">10</a></li>
+                                    <li id="3"><a value="15">15</a></li>
+                                    <li id="4"><a value="20">20</a></li>
+                                    <li id="5"><a value="25">25</a></li>
+                                    <li id="6"><a value="30">30</a></li>
+                                    <li id="7"><a value="35">35</a></li>
+                                    <li id="8"><a value="40">40</a></li>
+                                    <li id="9"><a value="45">45</a></li>
+                                    <li id="10"><a value="50">50</a></li>
+                                    <li id="11"><a value="55">55</a></li>
+                                </ul> 
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-left: 23px;">
+                        <button type="button" class="check_button" id="timeRebootSave">保 存</button>
+                    </div>
+                    <input id="timeRebootEnablestatus" name="timeRebootEnablestatus" value="<%=timerebootstatus%>" type="hidden">
+                    <input id="timeRebootrange" name="timeRebootrange" value="" type="hidden">
+                    <input id="cururl" name="cururl" value="" type="hidden">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!--modify pwd-->
+    <div class="modal fade onekeycheck_div" id="changePwdModal" tabindex="-1" role="dialog" aria-labelledby="changePwdModalLabel" style="">
+        <form method="post" name="frm_change_pwd" action="<%=luci.dispatcher.build_url("admin", "index", "gra_changepassword")%>" enctype="multipart/form-data" target="">
+            <div class="modal-dialog changePwd_dialog" role="document">
+                <div class="modal-content changePwd_content" >
+                    <div class="modal-header modal_header_border">
+                        <div class="icon_close_div">
+                            <a href="#" data-dismiss="modal" class="close">
+                                <span class="icon-break icon_close_pan"   style="">
+                                </span>
+                            </a>    
+                        </div>
+                        <div class="modal_title_div" style="">
+                            <span>密码修改</span>    
+                        </div>
+                    </div>
+                    <hr style="margin-bottom: 5px;">
+                    <div class="modal-body">
+                        <div class="changePwdModal_body">
+                            <span id="error_msg" style="text-align: center;color: #FF0000;"></span>
+                            <div style="margin-top:10px;">
+                                <span style="">原密码:</span>
+                                <input type="password" id="pwd_old" value=""></input>
+                            </div>
+                            <div>
+                                <span style="">新密码:</span>
+                                <input type="password" id="pwd_new1" name="pwd_new" value=""></input>
+                                <img src="<%=media%>/images/icon_visible_off.png" class="img_change user_new_pwd" value="1">
+                            </div>
+                            <div>
+                                <span style="">确认新密码:</span>
+                                <input type="password" id="pwd_new2" value=""></input>
+                                <img src="<%=media%>/images/icon_visible_off.png" class="img_change user_new_pwd" value="1">
+                            </div>
+
+                        </div>
+                    </div>
+                    <div style="margin-left: 23px;">
+                        <button type="button" class="check_button" id="save_pwd"><%:Save%>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!--onekeycheck-->
+    <div class="modal fade onekeycheck_div" id="onekeyCheckModal" tabindex="-1" role="dialog" aria-labelledby="onekeyCheckModalLabel">
+        <div class="onekeycheck_dialog" role="document">
+            <div class="modal-content" style="min-height:304px;">
+                <div class="modal-header modal_header_border">
+                    <div class="icon_close_div">
+                        <a href="#" data-dismiss="modal" class="onecheck_close close" id="onecheck_list">
+                            <span class="icon-break icon_close_pan">
+                            </span>
+                        </a>    
+                    </div>
+                    <div class="modal_title_div"  id="title1">
+                        <span>一键体检</span>    
+                    </div>        
+                    <div class="modal_header_score_div" style="display:none;" id="title2">
+                        <span class="modal_header_score_div_span1">一键体检</span>
+                        <span class="modal_header_score_div_span2" id="title2span">体检进行中</span>
+                        <span class="check_loading_span" id="check_loading"></span>
+                        <div class="onekeycheck_score2" id="score">100
+                        </div>
+
+                    </div>
+                </div>
+                <hr>
+                <div class="modal-body" style="text-align:left;margin-top: -10px;min-height:185px;">
+                    <div>
+                        <span class="onecheckmodal_body_1" id="fault_det" style="display:none">故障检测:</span>
+                        <div class="onecheckmodal_body_2">
+                            <span id="wan_fault_det" style="display:none">WAN口故障检测:</span>
+                            <img class="onecheckmodal_body_2_span" src="<%=media%>/images/hook.png"  id="wan_fault_det_ok" style="display:none"/>
+                            <div class="onecheckmodal_body_3" id="wan_fault_det_result" style="display:none">
+                                <div class="onecheckmodal_body_3_div1">
+                                    <span>请将网线的一端插在路由器WAN口，另一端插在运营商提供的宽带接口上，如果还是不行，换一条网线试试？
+                                    </span>
+                                </div>
+                                <div class="onecheckmodal_body_3_div2">
+                                    <button id="wanlink_up">刷新</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="onecheckmodal_body_2" >
+                            <span id="inte_status_det" style="display:none">上网状态检测:</span>
+                            <img class="onecheckmodal_body_2_span" src="<%=media%>/images/hook.png"  id="inte_status_det_ok" style="display:none"/>
+                            <div class="onecheckmodal_body_3" id="inte_status_det_result" style="display:none">
+                                <div class="onecheckmodal_body_3_div1">
+                                    <span>
+                                    </span>
+                                </div>
+                                <div class="onecheckmodal_body_3_div2">
+                                    <button id="network_list">立即修改</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px;display:none" id="onecheckmodal_body_1_div">
+                        <span class="onecheckmodal_body_1" id="sys_alert" style="display:none">系统提醒:</span>
+                        <div class="onecheckmodal_body_2" >
+                            <span id="wifi_status_det" style="display:none">无线状态检测:</span>
+                            <img class="onecheckmodal_body_2_span" src="<%=media%>/images/hook.png"   id="wifi_status_det_ok" style="display:none"/>
+                            <div class="onecheckmodal_body_3" id = "wifi_status_det_result_2" style="display:none">
+                                <div class="onecheckmodal_body_3_div3">
+                                    <span>2.4G WiFi：未开启
+                                    </span>
+                                </div>
+                                <div class="onecheckmodal_body_3_div4">
+                                    <button class="wifi_list">立即修改</button>
+                                </div>
+                            </div>
+                            <div class="onecheckmodal_body_3" id = "wifi_status_det_result_5" style="display:none">
+                                <div class="onecheckmodal_body_3_div3">
+                                    <span>5G WiFi: 未开启
+                                    </span>
+                                </div>
+                                <div class="onecheckmodal_body_3_div4">
+                                    <button class="wifi_list">立即修改</button>
+                                </div>
+                            </div>
+                            <div class="onecheckmodal_body_3" id = "wifi_status_det_result_sig" style="display:none">
+                                <div class="onecheckmodal_body_3_div3">
+                                    <span>无线信号增强：未开启
+                                    </span>
+                                </div>
+                                <div class="onecheckmodal_body_3_div4">
+                                    <button id="signal_en">立即修改</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="onecheckmodal_body_2" >
+                            <span id="wifi_pwd_det" style="display:none">无线密码检测:</span>
+                            <img class="onecheckmodal_body_2_span" src="<%=media%>/images/hook.png"  id="wifi_pwd_det_ok" style="display:none"/>
+                            <div class="onecheckmodal_body_3" id="wifi_pwd_det_result_2" style="display:none">
+                                <div class="onecheckmodal_body_3_div3">
+                                    <span>2.4G密码：安全性弱
+                                    </span>
+                                </div>
+                                <div class="onecheckmodal_body_3_div4">
+                                    <button class="wifi_list">立即修改</button>
+                                </div>
+                            </div>
+
+                            <div class="onecheckmodal_body_3" id="wifi_pwd_det_result_5" style="display:none">
+                                <div class="onecheckmodal_body_3_div3">
+                                    <span>5G密码：安全性弱
+                                    </span>
+                                </div>
+                                <div class="onecheckmodal_body_3_div4">
+                                    <button class="wifi_list">立即修改</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="onecheckmodal_body_2" >
+                            <span id="router_pwd_det" style="display:none">路由器密码检测:</span>
+                            <img class="onecheckmodal_body_2_span" src="<%=media%>/images/hook.png"  id="router_pwd_det_ok" style="display:none"/>
+                            <div class="onecheckmodal_body_3" id="router_pwd_det_result" style="display:none">
+                                <div class="onecheckmodal_body_3_div3">
+                                    <span>路由器密码：安全性弱
+                                    </span>
+                                </div>
+                                <div class="onecheckmodal_body_3_div4">
+                                    <button id="pwd_list">立即修改</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="onecheckmodal_body_2" >
+                            <span id="firmware_ver_det" style="display:none">固件版本检测:</span>
+                            <img class="onecheckmodal_body_2_span" src="<%=media%>/images/hook.png"  id="firmware_ver_det_ok" style="display:none"/>
+                            <div class="onecheckmodal_body_3" id="firmware_ver_det_result" style="display:none">
+                                <div class="onecheckmodal_body_3_div3">
+                                    <span>检测到新版本
+                                    </span>
+                                </div>
+                                <div class="onecheckmodal_body_3_div4">
+                                    <button id="update_button">立即升级</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="onekeycheck_button_div" style="text-align:center;margin-bottom:20px;">
+                      <button class="check_button" id="onekeycheck_button" style="">开始体检</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <% if #request > 0 and request[2] ~= "index" and request[2] ~= "networkset" and request[2] ~= "wifiset" and request[2] ~= "device_manage" then %>
+		<% include("themes/" .. theme .. "/navigator") %>
+    <%end%>

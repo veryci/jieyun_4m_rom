@@ -1,0 +1,13 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+APP=adfilter
+PID_FILE=/var/run/$APP.pid
+
+start() {
+	/usr/sbin/adfilter -c /etc/adfilter.conf &
+}
+
+stop() {
+	killall -9 adfilter
+}

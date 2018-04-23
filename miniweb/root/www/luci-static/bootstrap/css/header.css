@@ -1,0 +1,276 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.header-c {
+  background: #4a4a4a;
+  text-align: center;
+  height: 60px;
+  position: fixed;
+  width: 100%;
+}
+
+.header {
+  max-width: 1140px;
+  line-height: 60px;
+  height: 60px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.header a {
+  text-decoration-line: none;
+}
+
+.header .logo {
+  float: left;
+  /*padding: 10px;*/
+}
+
+.header .logo img {
+  height: 40px;
+}
+
+.header ul {
+  list-style: none;
+  display: inline-block;
+}
+
+.header ul li {
+  cursor: pointer;
+  color: #f59123;
+  font-size: 18px;
+  text-align: center;
+  width: 160px;
+  display: inline-block;
+}
+
+.header ul li.active {
+  background: #f59123;
+  color: #4a4a4a;
+}
+
+.header ul.nav li span {
+  vertical-align: middle;
+  width: 30px;
+  height: 30px;
+  display: inline-block;
+  background-image: url('../img/icons.png');
+}
+
+.header ul.nav li#networkset span {
+  background-position: -450px -65px;
+}
+
+.header ul.nav li#networkset.active span {
+  background-position: -450px -125px;
+}
+
+.header ul.nav li#teminalset span {
+  background-position: -510px -65px;
+}
+
+.header ul.nav li#teminalset.active span {
+  background-position: -510px -125px;
+}
+
+.header ul.nav li#wlanset span {
+  background-position: -560px -65px;
+}
+
+.header ul.nav li#wlanset.active span {
+  background-position: -560px -125px;
+}
+
+.header ul.nav li#higherset span {
+  background-position: -620px -65px;
+}
+
+.header ul.nav li#higherset.active span {
+  background-position: -620px -125px;
+}
+
+.header .setting {
+  float: right;
+  width: 160px;
+  text-align: right;
+}
+
+.header .setting .account-c,
+.header .setting .restart-c {
+  text-align: center;
+  position: absolute;
+  background: #4a4a4a;
+  display: none;
+  width: 160px;
+  height: 80px;
+}
+
+.header .setting .account-c div,
+.header .setting .restart-c div {
+  color: #f59123;
+  font-size: 16px;
+  line-height: 40px;
+  height: 40px;
+  /*border-bottom: 1px solid #f59123;*/
+}
+
+.header .setting .account-c div:first-child,
+.header .setting .restart-c div:first-child {
+  border-bottom: 1px solid #f59123;
+}
+
+.header .setting * {
+  cursor: pointer;
+}
+
+.header .setting span {
+
+  vertical-align: middle;
+  display: inline-block;
+  margin: 8px;
+  width: 30px;
+  height: 30px;
+  background-image: url('../img/icons.png');
+  background-repeat: no-repeat;
+}
+
+.header .setting span#shield {
+  background-position: -135px -65px;
+}
+
+.header .setting span#restart {
+  background-position: -180px -65px;
+}
+
+.header .setting span#account {
+  background-position: -226px -65px;
+}
+
+.footer {
+  text-align: center;
+  line-height: 56px;
+  border-top: 1px solid #f59123;
+  height: 57px;
+  color: #f59123;
+  font-size: 18px;
+  bottom: 0;
+  position: absolute;
+  width: 100%;
+}
+
+#higherset-c {
+  padding: 20px;
+  height: 250px;
+  background: #EEEEEE;
+  /*position: relative;*/
+  position: absolute;
+  width: 100%;
+  display: none;
+  text-align: center;
+  z-index: 100;
+}
+
+#higherset-cc {
+  width: 1000px;
+  margin: 0 auto;
+}
+
+#higherset-cc > div {
+  width: 200px;
+  height: 205px;
+  /*display: inline-block;*/
+  float: left;
+  border-right: 2px solid #9b9b9b;
+}
+
+#higherset-cc > div:last-child {
+  border-right: none;
+}
+
+#higherset-cc > div > .item {
+  margin-bottom: 20px;
+  font-size: 18px;
+  height: 26px;
+  line-height: 26px;
+}
+
+#higherset-cc > div > .item span {
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+#higherset-cc > div > .item-l {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+#higherset-cc > div > .item span:first-child {
+  background-image: url('../img/icons.png');
+  background-position: -450px -65px;
+  background-repeat: no-repeat;
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+  margin-right: 5px;
+}
+
+#higherset-cc > div > .item span#item-xtzt {
+  background-position: -65px -340px;
+}
+
+#higherset-cc > div > .item span#item-xhtj {
+  background-position: -65px -385px;
+}
+
+#higherset-cc > div > .item span#item-wxtz {
+  background-position: -65px -430px;
+}
+
+#higherset-cc > div > .item span#item-wps {
+  background-position: -65px -478px;
+}
+
+#higherset-cc > div > .item span#item-zjkz {
+  background-position: -65px -523px;
+}
+
+#higherset-cc > div > .item span#item-aqsz {
+  background-position: -285px -340px;
+}
+
+#higherset-cc > div > .item span#item-ycgl {
+  background-position: -285px -385px;
+}
+
+#higherset-cc > div > .item span#item-dns {
+  background-position: -285px -430px;
+}
+
+#higherset-cc > div > .item span#item-zngw {
+  background-position: -285px -478px;
+}
+
+#higherset-cc > div > .item span#item-lyg {
+  background-position: -285px -523px;
+}
+
+#higherset-cc > div > .item span#item-nwsz {
+  background-position: -505px -340px;
+}
+
+#higherset-cc > div > .item span#item-zfsz {
+  background-position: -690px -335px;
+}
+
+#higherset-cc > div > .item span#item-xtsz {
+  background-position: -845px -340px;
+}
+
+#higherset-cc > div > .item span:last-child {
+  display: inline-block;
+  text-align: initial;
+  width: 83px;
+}

@@ -1,0 +1,80 @@
+.modal {
+  display: none;
+  z-index: 100;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #979797;
+  opacity: .6;
+}
+
+.modal-c {
+  background: none;
+  opacity: 1;
+}
+
+.modal-c .alert {
+  text-align: center;
+  width: 300px;
+  height: 150px;
+  background: #fff;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, .5);
+  margin: 300px auto 0;
+  position: relative;
+  padding-top: 20px;
+}
+
+.modal-c .alert .tint {
+  margin: 20px auto;
+  font-size: 26px;
+}
+
+.modal-c .alert .modal-btn {
+  width: 90px;
+  height: 36px;
+  font-size: 18px;
+  line-height: 36px;
+  text-align: center;
+  display: inline-block;
+  margin: 0 20px;
+  border-radius: 2px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.modal-c .alert .btn-save {
+  width: 200px;
+  outline: none;
+  border: none;
+  font-size: 16px;
+  padding: 0;
+  height: 36px;
+  margin: 0 10px;
+  padding: 0 5px;
+  background: #f59123;
+  border-radius: 3px;
+  color: #fff;
+}
+
+.modal-c .alert a {
+  text-decoration-line: none;
+}
+
+.modal-c .alert .btn-ok {
+  background: #f59123;
+}
+
+.modal-c .alert .btn-cancel {
+  background: #666666;
+}
+
+.modal-c .alert .ok-btn {
+  cursor: pointer;
+  border: 1px solid #fac891;
+  color: #f59123;
+  line-height: 30px;
+  width: 100px;
+  margin: 0 auto;
+}

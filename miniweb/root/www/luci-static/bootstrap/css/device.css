@@ -1,0 +1,163 @@
+.content {
+      width: 1105px;
+      margin: 0 auto;
+    }
+
+    .content .content-title {
+      padding: 20px;
+      font-size: 26px;
+      color: #4a4a4a;
+      text-align: center;
+      border-bottom: 1px solid #979797;
+    }
+
+    .content .content-body {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .content .content-body form div {
+      margin: 20px auto;
+    }
+
+    .content .content-body form div.title * {
+      vertical-align: middle;
+    }
+
+
+    .content .content-body form div.section {
+      border-top: 1px solid #e5e5e5;
+      padding: 20px;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .content .content-body form div>span:first-child {
+      vertical-align: middle;
+      width: 200px;
+      font-size: 18px;
+      color: #4a4a4a;
+      display: inline-block;
+      text-align: right;
+      margin-left: -200px;
+    }
+
+    .content .content-body form div>span:last-child {
+      width: 200px;
+      font-size: 18px;
+      color: #4a4a4a;
+      display: inline-block;
+      text-align: initial;
+    }
+
+    .content .content-body form div>span:last-child * {
+      vertical-align: middle;
+    }
+
+    .content .content-body form div input[type=text],
+    .content .content-body form div input[type=password] {
+      width: 100%;
+    }
+
+    .content .content-body form button {
+      width: 200px;
+      height: 36px;
+    }
+
+    .content .content-body form div select {
+      background-image: url("img/downarrow.png");
+      background-color: #fff;
+      background-repeat: no-repeat;
+      background-position-x: right;
+      padding: 5px 8px;
+      width: 100%;
+      height: 36px;
+      font-size: 18px;
+      border: 1px solid #979797;
+      border-radius: 0;
+      outline: none;
+      box-shadow: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    .content .content-body form>div .help {
+      background-image: url("img/icons.png");
+      background-repeat: no-repeat;
+      background-position: -770px -88px;
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+    }
+
+    .wps-set * {
+      vertical-align: middle;
+    }
+
+    .wps-set input[type=checkbox] {
+      visibility: hidden;
+      position: absolute;
+    }
+
+    .wps-set input[type=checkbox]:checked+label:before,
+    .wps-set input[type=checkbox]:not(:checked)+label:before {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 16px;
+      height: 16px;
+      content: '';
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #f3f3f3;
+    }
+
+    .wps-set input[type=checkbox]:not(:checked)+label:before {
+      left: 0;
+    }
+
+    .wps-set input[type="checkbox"]:not(:checked)+label,
+    .wps-set input[type=checkbox]+label {
+      position: relative;
+      display: inline-block;
+      width: 26px;
+      height: 18px;
+      background: #44DB5E;
+      border-radius: 9px;
+    }
+
+    .wps-set input[type="checkbox"]:not(:checked)+label {
+      background: gray;
+    }
+
+    .content .content-body form table {
+      width: 720px;
+      margin: 0 auto;
+      text-align: center;
+      border-collapse: collapse;
+    }
+
+    .content .content-body form table tr {
+      height: 80px;
+    }
+
+    .content .content-body form table tr:first-child {
+      background: #D8D8D8;
+      height: 60px;
+      border: 1px solid #979797;
+    }
+
+    .content .content-body form table tr td {
+      width: 120px;
+      border: 1px solid #979797;
+      padding: 5px;
+    }
+
+    .content .content-body form table tr:first-child td {
+      border: none;
+    }
+
+    .content .content-body form table tr td:first-child,
+    .content .content-body form table tr td:last-child {
+      width: 60px;
+    }

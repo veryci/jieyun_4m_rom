@@ -1,0 +1,5 @@
+
+config result 'result'
+	option downband '0'
+	option upband '0'
+

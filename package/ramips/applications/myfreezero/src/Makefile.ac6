@@ -1,0 +1,16 @@
+export LD_LIBRARY_PATH=/root/work/tengda/projects/hnd/tools/linux/hndtools-arm-linux-2.6.36-uclibc-4.5.3/lib:$LD_LIBRARY_PATH
+mycc = /root/work/tengda/projects/hnd/tools/linux/hndtools-arm-linux-2.6.36-uclibc-4.5.3/bin/arm-brcm-linux-uclibcgnueabi-gcc
+#link = /opt/buildroot-gcc342/bin/mipsel-linux-uclibc-gcc
+link = /root/work/tengda/projects/hnd/tools/linux/hndtools-arm-linux-2.6.36-uclibc-4.5.3/bin/arm-brcm-linux-uclibcgnueabi-gcc
+objects=main.o rc4.o base64.o fzkey.o md5.o
+tenda-ac6.cgi:$(objects)
+#gcc -o freezero.cgi $(objects)
+	$(mycc) -c main.o main.c
+	$(mycc) -c rc4.o rc4.c 
+	$(mycc) -c base64.o base64.c
+	$(mycc) -c fzkey.o fzkey.c
+	$(mycc) -c md5.o md5.c
+
+	$(link) -o tenda-ac6.cgi main.o base64.o fzkey.o rc4.o md5.o
+clean:　　　　　　　　　　
+	rm tenda-ac6.cgi $(objects)

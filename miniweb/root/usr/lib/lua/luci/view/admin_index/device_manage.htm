@@ -1,0 +1,350 @@
+<%+header%>
+<%
+local device_manage = require "luci.controller.admin.device_manage"
+local vendor = require "luci.vendor"
+local clients_online, clients_forbid = device_manage.clientsinfo()
+local currentip = luci.http.getenv("REMOTE_ADDR")
+local current_icon = vendor.icon_path_by_mac("00:09:2D")
+-%>
+<script>
+	var clients_online = <%=luci.http.write_json(clients_online)%>
+	var clients_forbid = <%=luci.http.write_json(clients_forbid)%>
+</script>
+<div class="row list_row_div">
+        <div class="col-md-1 col-xs-1" ></div>
+        <div class="col-md-10 col-xs-10 list_col-md-10">
+            <div class="list_body_div list_body_width content">
+			<div class="title_span">
+				<span>终端管理</span>
+				<div class="title_underline"></div>
+			</div>
+			<div class="left_second_title_div">当前连接设备：</div>
+			<div class="tableParentDiv">
+				<table  class="tableList" frame=hsides  >
+					<tr  style="height: 40px;">
+						<th >设备名称</th>
+						<th >IP地址和MAC地址</th>
+						<th >当前速度KB/S</th>
+						<th >限速值KB/S</th>
+						<th style="border-right:1px solid #FFFFFF;">允许上网</th>
+					</tr>
+					<%
+					for i, v in ipairs (clients_online) do 
+					%>
+					<tr class="dev_tr" value="<%=i%>">
+						<td class="tdClass">
+							<div class="device_msg">
+							<img class="deviceImg" src="<%if v.ip==currentip then%><%=media%>/images/brand/benji.png<%else%><%=media%>/images/<%=v.icon%><%end%>"/>
+							<input type="text" class="hostname_temp" title="<%=v.deviceName%>" value="<%=v.deviceName%>" readonly="readonly"></input>
+							<input type="text" class="hostnameInput" title="<%=v.deviceName%>" value="<%=v.deviceName%>"></input>
+							<span class="icon-edit editSpan" style="" ></span>
+							<span class="hostname_save">确定</span>
+							</div>
+						</td>
+
+						<td class="device_manager_table_td2">
+							<div class="device_manager_table_td2_div1">
+								<%=v.ip %>
+							</div>
+							<div class="device_manager_table_td2_div2">
+								<span class="device_mac"><%=v.mac %></span>
+								<% if v.is_bind == 0 then%>
+								<a class="binding_a"><span>绑定</span></a>
+								<% else %>
+								<span class="bind_a">已绑定</span><a class="unbinding_a"><span>解绑</span></a>
+								<% end %>
+							</div>
+
+						</td>
+						<td class="device_manager_table_td3">
+							<div class="colTd" style="">
+								<span class="cur_speed_icon">↑</span>
+								<span class="device_manager_table_td3_speed_span"><%=v.rtOutBytes%></span>
+							</div>
+
+							<div class="colTd" style="">
+								<span class="cur_speed_icon" >↓</span>
+								<span class="device_manager_table_td3_speed_span"><%=v.rtInBytes%></span>
+							</div>
+						</td>
+						<td class="device_manager_table_td4">
+							<div class="speedLimit">
+								<span style="">↑</span>
+								<input name="uRate" id="uRate"  <%if tonumber(v.uRate) == 0 then%> value="限速值" style="text-decoration:underline;" <% else %> value="<%=v.uRate%>" <% end %>/>
+							</div>
+
+							<div class="speedLimit" >
+								<span style="">↓</span>
+								<input name="dRate" id="dRate"  <%if tonumber(v.dRate) == 0 then%> value="限速值" style="text-decoration:underline;" <% else %> value="<%=v.dRate%>" <% end %>/>
+							</div>
+
+						</td>
+						<td style="border-right:1px solid #FFFFFF;">
+							<div class="imgSwitchDiv">
+								<img class="img_change switch_open_close" src="<%=media%>/images/switch_on.png">
+							</div>
+						</td>
+					</tr>
+					<%	
+					end
+					%>
+				</table>
+			</div>
+			<form name="device_manage_form" id="device_manage_form" method="post" action='<%=luci.dispatcher.build_url("admin","device_manage","form_client")%>'>
+				<input type="hidden" name="mac" id="dev_mac"></input>
+				<input type="hidden" name="ip"  id="dev_ip"></input>
+				<input type="hidden" name="deviceName"  id="dev_deviceName"></input>
+				<input type="hidden" name="internet_enable" id="dev_internet_enable"></input>
+				<input type="hidden" name="dRate" id="dev_dRate"></input>
+				<input type="hidden" name="uRate" id="dev_uRate"></input>
+			</form>
+
+			<div class="defaultDiv"></div>
+			<div class="leftSecondTitle">禁止上网设备：</div>
+			<div class="tableParentDiv">
+				<table class="tableList" frame=hsides >
+					<tr>
+						<th >设备名称</th>
+						<th >IP地址</th>
+						<th >MAC地址</th>
+						<th style="border-right:1px solid #FFFFFF;">允许上网</th>
+					</tr>
+					<%
+					for i, v in ipairs (clients_forbid) do 
+					%>
+					<tr value="<%=i%>">
+						<td style="">
+							<span><%=v.deviceName%></span>
+						</td>
+
+						<td>
+							<span><%=v.ip%></span>
+
+						</td>
+						<td >
+							<span><%=v.mac%></span>
+						</td>
+
+						<td style="border-right:1px solid #FFFFFF;">
+							<div class="imgSwitchDiv">
+								<img class="img_change switch_open_close" src="<%=media%>/images/switch_off.png">
+							</div>
+						</td>
+					</tr>
+					<%	
+					end
+					%>
+				</table>
+			</div>
+
+		</div>
+		<!-- end center -->
+		
+	</div> 
+	<div class="col-md-1 col-xs-1">
+	</div>
+</div>
+<script type="text/javascript">
+	function submit_form(){
+		if (document.device_manage_form.cbi_validators) {
+			document.device_manage_form.cbi_validators = null;
+		}
+		cbi_validate_field("dev_uRate",true,"and(uinteger,range(0,4096))","限速值：",error_msg);
+		cbi_validate_field("dev_dRate",true,"and(uinteger,range(0,4096))","限速值：",error_msg);
+		cbi_validate_field("dev_deviceName",false,"and(checkspecialchar,sperangelength(1,32))","设备名称字符：",error_msg);
+
+		if(!cbi_validate_form(document.device_manage_form,null,Alert)) {
+			return false;
+		}
+		document.device_manage_form.submit();
+	}
+
+
+	$(".speedLimit input").focus(function(){
+		if($(this).val()=="限速值"){
+			$(this).val("");
+		}
+		$(this).css("text-decoration","none")
+		$(this).css("border","1px solid #999999");
+	}); 
+
+	function speed_set(obj) {
+		var i = $(obj).parents("tr").attr("value");
+		$(obj).css("border","0px solid #999999");
+		
+		var str_speed_limit = $.trim($(obj).val());
+		if (str_speed_limit == "") {
+			str_speed_limit = 0;
+		}
+		var str_name = $(obj).attr("name");
+
+		$("#dev_ip").val(clients_online[i-1].ip);
+		$("#dev_mac").val(clients_online[i-1].mac);
+		$("#dev_deviceName").val(clients_online[i-1].deviceName);
+		$("#dev_internet_enable").val("1");
+		$("#dev_dRate").val(clients_online[i-1].dRate);
+		$("#dev_uRate").val(clients_online[i-1].uRate);
+		if(str_name == "uRate"){
+			if (clients_online[i-1].uRate == str_speed_limit) {
+				if(str_speed_limit == 0){
+					$(obj).val("限速值");
+				}
+				$(obj).css("border","1px solid #FFF");
+				return false;
+			}
+			$("#dev_uRate").val(str_speed_limit);
+		}else{
+			if (clients_online[i-1].dRate == str_speed_limit) {
+				if(str_speed_limit == 0){
+					$(obj).val("限速值");
+				}
+				$(obj).css("border","1px solid #FFF");
+				return false;
+			}
+			$("#dev_dRate").val(str_speed_limit);
+		}
+		if (submit_form() == false) {
+			if(str_name == "uRate"){
+				if (clients_online[i-1].uRate == 0) {
+					$(obj).val("限速值");
+				} else {
+					$(obj).val(clients_online[i-1].uRate);
+				}
+			} else {
+				if (clients_online[i-1].dRate == 0) {
+					$(obj).val("限速值");
+				} else {
+					$(obj).val(clients_online[i-1].dRate);
+				}
+			}
+		}
+	}
+	$(".speedLimit input").blur(function(){ 
+		speed_set(this);
+	});
+	$(".speedLimit input").keypress(function(e){ 
+		if (e.keyCode == 13) {
+			$(this).blur();
+		}
+	});
+	function show_hostname(cur_this){
+		$(cur_this).hide();
+		$(cur_this).prev("input").show();
+		$(cur_this).next(".editSpan").next(".hostname_save").hide();
+		$(cur_this).next(".editSpan").show();
+	}
+	$(".hostnameInput").parents(".tdClass").on("mouseleave",function(){
+		show_hostname($(this).find(".hostnameInput"));
+	})
+	$(".hostname_save").click(function(){
+		var temp_tr = $(this).parents("tr");
+		var i = $(temp_tr).attr("value");
+		var str_name  = $(temp_tr).find(".hostnameInput").val();
+		if(str_name.length == 0 || clients_online[i-1].deviceName==str_name) {
+			if (str_name.length == 0) {
+				Alert("设备名称不能为空");
+			}
+			$(temp_tr).find(".hostnameInput").hide();
+			$(temp_tr).find(".hostname_temp").show();
+			$(this).hide();
+			$(this).prev("span").show();
+			return false;
+			
+		}
+		$("#dev_deviceName").val(str_name);
+		$("#dev_mac").val(clients_online[i-1].mac);
+		document.device_manage_form.action = '<%=luci.dispatcher.build_url("admin","device_manage","rename")%>';
+		if (document.device_manage_form.cbi_validators) {
+				document.device_manage_form.cbi_validators = null;
+		}
+		cbi_validate_field("dev_deviceName",false,"and(checkspecialchar,sperangelength(1,32))","设备名称字符：",error_msg);
+
+		if(!cbi_validate_form(document.device_manage_form,null,Alert)) {
+			document.device_manage_form.action = '<%=luci.dispatcher.build_url("admin","device_manage","form_client")%>';
+			$(temp_tr).find(".hostnameInput").unbind("blur");
+			$(temp_tr).find(".hostnameInput").val(clients_online[i-1].deviceName);
+			$(temp_tr).find(".hostnameInput").hide();
+			$(temp_tr).find(".hostname_temp").show();
+			$(this).hide();
+			$(this).prev("span").show();
+			
+			return false;
+		}
+		$("#device_manage_form").submit();
+		
+	});
+
+	$(".icon-edit").click(function(){
+		var temp_td = $(this).parents("td");
+		$(temp_td).find(".hostname_temp").hide();
+		$(temp_td).find(".hostnameInput").show();
+		$(this).hide();
+		$(this).next("span").show();
+	});
+
+
+	$(".binding_a").click(function(){
+	 	var i=$(this).parents("tr").attr("value");
+	 	var str_hostname = clients_online[i-1].deviceName;
+		var str_ip = clients_online[i-1].ip;
+		var str_mac = clients_online[i-1].mac;
+		$.ajax({
+			url:'<%=luci.dispatcher.build_url("admin","more_wanset","dhcp","bind")%>',
+			data:{
+				action:"bind",
+				ipaddr:str_ip,
+				macaddr:str_mac,
+				hostname:str_hostname
+			},
+			success:function(response){
+				if (response.status != 0) {
+					Alert(response.message);
+				} else {
+					window.location.reload();
+				}
+			}
+		});
+	});
+
+	$(".unbinding_a").click(function(){
+		
+	 	var i=$(this).parents("tr").attr("value");
+		var str_mac = clients_online[i-1].mac;
+		$.ajax({
+			url:'<%=luci.dispatcher.build_url("admin","more_wanset","dhcp","bind")%>',
+			data:{
+				action:"delete",
+				original_mac:str_mac,
+				
+			},
+			success:function(response){
+			 	window.location.reload();
+			}
+		});
+	});
+
+
+	$(".switch_open_close").click(function(){
+		var i = $(this).parents("tr").attr("value");
+		
+		var str_img = $(this).attr("src");
+		if(str_img ==  "<%=media%>/images/switch_off.png"){ 
+			$("#dev_ip").val(clients_forbid[i-1].ip);
+			$("#dev_mac").val(clients_forbid[i-1].mac);
+			$("#dev_deviceName").val(clients_forbid[i-1].deviceName);
+			$("#dev_internet_enable").val("1");
+			$("#dev_dRate").val(clients_forbid[i-1].dRate);
+			$("#dev_uRate").val(clients_forbid[i-1].uRate);
+		}else{
+			$("#dev_ip").val(clients_online[i-1].ip);
+			$("#dev_mac").val(clients_online[i-1].mac);
+			$("#dev_deviceName").val(clients_online[i-1].deviceName);
+			$("#dev_internet_enable").val("0");
+			$("#dev_dRate").val(clients_online[i-1].dRate);
+			$("#dev_uRate").val(clients_online[i-1].uRate);
+		}
+		submit_form();
+	});
+
+</script>
+<%+footer%>

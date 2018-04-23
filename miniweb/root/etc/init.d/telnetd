@@ -1,0 +1,12 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006 OpenWrt.org
+
+START=101
+start() {
+        CFG_MODE=`dd if=/dev/mtd3 bs=1 skip=2048 count=2 2>/dev/null | hexdump -e '/2 "%02X"'`
+	if [ $CFG_MODE = "1111" ];then
+		/usr/sbin/telnetd -l /sbin/jysh
+	else
+		/usr/sbin/telnetd -l /bin/ash
+	fi
+}

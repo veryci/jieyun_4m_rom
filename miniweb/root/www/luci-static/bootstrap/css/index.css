@@ -1,0 +1,147 @@
+  .content {
+      max-width: 1140px;
+      margin: 0 auto;
+      margin-bottom: 30px;
+      padding-top: 70px;
+    }
+
+    .content .status {
+      text-align: center;
+      margin: 0 auto;
+      margin-top: 40px;
+    }
+
+    .content .status .tint-word {
+      font-size: 26px;
+      color: #4a4a4a;
+    }
+
+    .content .status .tint-img span {
+      background-image: url('../img/icons.png');
+      background-repeat: no-repeat;
+      width: 85px;
+      height: 85px;
+      margin: 20px;
+      display: inline-block;
+    }
+
+    .content .status .tint-img .ok {
+      background-position: -1140px -149px;
+    }
+
+    .content .status .tint-img .err {
+      background-position: -1015px -149px;
+    }
+
+    .content .status .wlanset a {
+      text-decoration-line: none;
+      color: #f59123;
+      width: 160px;
+      height: 32px;
+      border-radius: 3px;
+      line-height: 32px;
+      font-size: 18px;
+      border: 1px solid #f59123;
+      text-align: center;
+      display: inline-block;
+    }
+
+    .funcs-c {
+      width: 840px;
+      margin: 0 auto;
+      margin-top: 40px;
+    }
+
+    .funcs-c .funcs {
+      margin-top: 20px;
+    }
+
+    .funcs-c .funcs .func {
+      border-right: 2px dotted #f59123;
+      border-bottom: 2px dotted #f59123;
+    }
+
+    .funcs-c .funcs .func:nth-child(3n) {
+      border-right: none;
+    }
+
+    .funcs-c .funcs .func:nth-child(n+4) {
+      border-bottom: none;
+    }
+
+    .funcs-c .funcs .func {
+      cursor: pointer;
+      position: relative;
+      float: left;
+      width: 280px;
+      height: 140px;
+      text-align: center;
+    }
+
+    .funcs-c .funcs .func a {
+      color: black;
+    }
+
+    .funcs-c .funcs .func span {
+      display: inline-block;
+      background-image: url('../img/icons.png');
+      background-repeat: no-repeat;
+    }
+
+    .funcs-c .funcs .func span.icon {
+      width: 65px;
+      height: 65px;
+      margin: 20px;
+      margin-top: 10px;
+    }
+
+    .funcs-c .funcs .func .close {
+      cursor: pointer;
+      display: none;
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 28px;
+      height: 28px;
+      background-position: -795px -90px;
+    }
+
+    .funcs-c .funcs .func:hover .close {
+      display: inline-block;
+    }
+
+    .funcs-c .funcs #wxtz .icon {
+      background-position: -60px -600px;
+    }
+
+    .funcs-c .funcs #xhtj .icon {
+      background-position: -61px -684px;
+    }
+
+    .funcs-c .funcs #jzkz .icon {
+      background-position: -235px -685px;
+    }
+
+    .funcs-c .funcs #zdgl .icon {
+      background-position: -1075px -850px;
+    }
+
+    .funcs-c .funcs #dhcp .icon {
+      background-position: -630px -718px;
+    }
+
+    .funcs-c .funcs #lyg .icon {
+      background-position: -430px -705px;
+    }
+
+    .footer {
+      text-align: center;
+      line-height: 56px;
+      border-top: 1px solid #f59123;
+      height: 57px;
+      color: #f59123;
+      font-size: 18px;
+      bottom: 0;
+      position: absolute;
+      width: 100%;
+    }

@@ -1,0 +1,15 @@
+#!/bin/sh /etc/rc.common
+# Copyright (c) 2012 Elite Co., Ltd.
+# Copyright (c) 2012 LIKAI <9@kai.li>
+
+START=25
+STOP=75
+
+start() {
+	/usr/bin/spawn-fcgi -s /tmp/fcgi-cgi0.sock -u root -U nobody -- /usr/bin/fcgi-cgi
+	/usr/bin/spawn-fcgi -s /tmp/fcgi-cgi1.sock -u root -U nobody -- /usr/bin/fcgi-cgi
+}
+
+stop () {
+	killall fcgi-cgi
+}

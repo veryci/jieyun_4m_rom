@@ -1,0 +1,34 @@
+<%- if firstmap and messages then local msg; for _, msg in ipairs(messages) do -%>
+    <div class="errorbox"><%=pcdata(msg)%></div>
+<%- end end -%>
+
+<%-+cbi/apply_xhr-%>
+
+<% if self.idname == "wifiset" or self.idname == "wanset" then %>
+	<div class="row list_row_div">
+        <div class="col-md-1 col-xs-1" ></div>
+        <div class="col-md-10 col-xs-10 list_col-md-10">
+        	<div class="list_body_div list_body_width">
+<% end %>
+				<div <% if self.addclass then %> class="<%=self.addclass%>" <%else%> class="setcontent" <% end %> id="cbi-<%=self.config%>">
+    			<% if self.title and #self.title > 0 then %>
+        			<div class="title_span" <% if self.mapcenterclass then %> style="padding-left:47%" <% end %>>
+        			<span><%=self.title%></span>
+    </div>
+        <div <% if self.config=="wireless" or (self.config=="network" and self.section=="wan")  then %> class="title_underline" <% else %> class="title_underline_advance" <%end%> ></div>
+    <% end %>
+    <% if self.description and #self.description > 0 then %><div class="cbi-map-descr"><%=self.description%></div><% end %>
+    <% if self.wanconnect then %>
+    <div class="wan_link" id="wan_link_err">
+        <span class="wan_set_link_icon_span" id="wan_set_link_icon"></span>
+        <span class="wan_set_link_msg_span" id="wan_error_span"></span>
+    </div>
+    <div>
+        <%end%>
+    <%- if firstmap and applymap then cbi_apply_xhr(self.config, parsechain, redirect) end -%>
+    <%- self:render_children() %>
+</div>
+
+<% if self.wanconnect then %>
+	<%-+cbi/pppoe-%>
+<% end %>

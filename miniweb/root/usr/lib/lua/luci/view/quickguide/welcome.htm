@@ -1,0 +1,156 @@
+<%#
+
+DISCREPTION   : LuCI - Lua Configuration Interface - quick guide support
+CREATED DATE  : 2016-05-05
+MODIFIED DATE : 
+-%>
+
+<!DOCTYPE html>
+<html>
+<% 
+local disp = require "luci.dispatcher" 
+require "luci.veryci"
+local uci_t = luci.model.uci.cursor() 
+%>
+<head> 
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no"/> 
+    <%+title%>
+     <link rel="stylesheet" href="<%=media%>/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<%=media%>/css/icon_fonts_style.css">
+    <link rel="stylesheet" href="<%=media%>/css/guide.css">
+    <script type="text/javascript" src="<%=media%>/js/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript" src="<%=media%>/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="<%=media%>/js/function.js"></script>
+    <script type="text/javascript" src="<%=media%>/js/jquery.nicescroll.min.js"></script>
+   <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!--[if lt IE 9]>
+  <script src="<%=media%>/js/html5shiv.js"></script>
+  <script src="<%=media%>/js/respond.min.js"></script>
+  <![endif]-->
+    <script type="text/javascript">
+    var timer1 = 0;
+    var counter = 0;
+    function quick_click()
+    {
+        document.quickguide_welcome.configclick.value = "click";
+        document.quickguide_welcome.submit();
+    }
+    <% if autodetect == "show" then %>
+    function quick_setting()
+    {
+      $.ajax({
+      type:"post",
+      url:"/vcapi/getdevicestatus?get=wan",
+      success:function(s)
+      {
+        if(s.phy_connect == 1)
+        {
+          $("#wan_check_modal").modal("show");
+          $.ajax({
+          type:"post",
+          url:"/vcapi/getdevicestatus?get=start",
+          success:function(s)
+          {
+            if(s.begin == 1)
+            {
+              timer1=setInterval("timeoutfunc()",2000);
+            }
+          }
+          }
+          );
+        }
+        else
+        {
+          detectfinish();
+        }
+      }
+      }
+      );
+    }
+    function timeoutfunc(){
+        counter=counter+1;
+        if(counter>=5){
+          detectfinish();
+        } else {
+          $.ajax({
+          type:"post",
+          url:"/vcapi/getdevicestatus?get=end",
+          success:function(s)
+          {
+            if(s.detectval == 1)
+            {
+              detectfinish();
+            }
+          }
+          }
+          );
+        }
+    }
+    function detectfinish()
+    {
+        window.location.href="<%=luci.dispatcher.build_url("admin", "quickguide", "internet_setting")%>";
+    }
+    $(function()
+    {
+		var wandetecttype = "<%=uci_t:get("network","wan","detectwanproto")%>";
+		if (wandetecttype != "") {
+			detectfinish();
+		} else {
+			quick_setting();
+		}
+    });
+    <% end %>
+    </script>
+</head>
+<body class="content_body" style="margin: 0 0;" oncontextmenu=self.event.returnValue=false>
+<form method="post" name="quickguide_welcome" action="<%=luci.dispatcher.build_url("admin", "quickguide", "welcome")%>">   
+    <div class="guide_logo">
+            <img src="<%=media%>/images/logo_guide.png"/>
+            <span>快速向导</span>
+    </div>
+    <input name="userprotocol" value="1" type="hidden">
+    <input name="configclick" value="" type="hidden">
+    <div class="guide_top_right">
+    </div>
+    <div class="guide_welcome_div">
+        <div class="guide_welcome_center">
+            <button id="quickconfig" class="guide_bt" onclick="quick_click()"><%:qckgd_quickconfig%></button>
+        </div>
+    </div>
+    <div class="guide_bottom_left">
+    </div>
+    <div class="guide_fotter">
+        <span class="mac_span"><%:MAC Address%>：<%=uci_t:get("network","wan","macaddr")%></span>
+        <span class="software_version_span">软件版本：<%=pcdata(luci.veryci.softversion)%></span>
+    </div>
+                    
+    <div class="modal fade" id="wan_check_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" >
+        <div class="check_wan_dialog modal-content" role="document">
+            <img src="<%=media%>/images/load.gif" alt="<%:Loading%>" class="loading_img" />
+            <span class="loading_msg_span"><%:qckgd_auodetecting_des%></span>
+        </div>
+    </div>
+</form>
+</body>
+<script>
+    $(".imgCheckBox_guide").click(function()
+    {
+        var imgname = $(this).attr("src");
+        if (imgname == "<%=media%>/images/icon_checkbox_off.png")
+        {
+            $(this).attr("src","<%=media%>/images/icon_checkbox_on.png");
+            $("#quickconfig").attr("disabled",false);
+            document.quickguide_welcome.userprotocol.value = "1";
+        }
+        else
+        {
+            $(this).attr("src","<%=media%>/images/icon_checkbox_off.png");
+            $("#quickconfig").attr("disabled",true);
+            document.quickguide_welcome.userprotocol.value = "0";
+        }
+    }
+    );
+</script>
+</html>
